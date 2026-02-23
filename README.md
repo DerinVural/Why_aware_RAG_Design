@@ -38,3 +38,15 @@ Benchmark:
 ```bash
 python3 fpga_rag_backend_benchmark_v1.py --iterations 20
 ```
+
+Web arayüz (RAG + ChatGPT):
+
+```bash
+OPENAI_API_KEY=your_key_here python3 fpga_rag_chatgpt_ui_v1.py --port 8787
+```
+
+Tarayıcı:
+
+```text
+http://127.0.0.1:8787
+```
