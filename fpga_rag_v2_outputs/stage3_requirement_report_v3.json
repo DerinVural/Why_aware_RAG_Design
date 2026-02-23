@@ -1,0 +1,443 @@
+{
+  "stage": 3,
+  "generated_at": "2026-02-23T09:13:25Z",
+  "counts": {
+    "project_nodes": 2,
+    "requirement_nodes": 31,
+    "decision_nodes": 10,
+    "source_doc_nodes": 20,
+    "edge_count": 87
+  },
+  "validation": [
+    {
+      "node_id": "STAGE3:PROJECT-A",
+      "node_type": "PROJECT",
+      "block_index": 1,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:PROJECT-B",
+      "node_type": "PROJECT",
+      "block_index": 2,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L0-001",
+      "node_type": "REQUIREMENT",
+      "block_index": 4,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L1-001",
+      "node_type": "REQUIREMENT",
+      "block_index": 5,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L1-002",
+      "node_type": "REQUIREMENT",
+      "block_index": 6,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L1-003",
+      "node_type": "REQUIREMENT",
+      "block_index": 7,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L1-004",
+      "node_type": "REQUIREMENT",
+      "block_index": 8,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L1-005",
+      "node_type": "REQUIREMENT",
+      "block_index": 9,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L1-006",
+      "node_type": "REQUIREMENT",
+      "block_index": 10,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-001",
+      "node_type": "REQUIREMENT",
+      "block_index": 11,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-002",
+      "node_type": "REQUIREMENT",
+      "block_index": 12,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-003",
+      "node_type": "REQUIREMENT",
+      "block_index": 13,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "MEDIUM",
+      "parse_uncertain_tag": true,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-004",
+      "node_type": "REQUIREMENT",
+      "block_index": 14,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-005",
+      "node_type": "REQUIREMENT",
+      "block_index": 15,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-006",
+      "node_type": "REQUIREMENT",
+      "block_index": 16,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-007",
+      "node_type": "REQUIREMENT",
+      "block_index": 17,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-008",
+      "node_type": "REQUIREMENT",
+      "block_index": 18,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-009",
+      "node_type": "REQUIREMENT",
+      "block_index": 19,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-010",
+      "node_type": "REQUIREMENT",
+      "block_index": 20,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-REQ-L2-011",
+      "node_type": "REQUIREMENT",
+      "block_index": 21,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "MEDIUM",
+      "parse_uncertain_tag": true,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-DEC-001",
+      "node_type": "DECISION",
+      "block_index": 22,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-DEC-002",
+      "node_type": "DECISION",
+      "block_index": 23,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-DEC-003",
+      "node_type": "DECISION",
+      "block_index": 24,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-DEC-004",
+      "node_type": "DECISION",
+      "block_index": 25,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:DMA-DEC-005",
+      "node_type": "DECISION",
+      "block_index": 26,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "MEDIUM",
+      "parse_uncertain_tag": true,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L0-001",
+      "node_type": "REQUIREMENT",
+      "block_index": 27,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L1-001",
+      "node_type": "REQUIREMENT",
+      "block_index": 28,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L1-002",
+      "node_type": "REQUIREMENT",
+      "block_index": 29,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L1-003",
+      "node_type": "REQUIREMENT",
+      "block_index": 30,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L1-004",
+      "node_type": "REQUIREMENT",
+      "block_index": 31,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L1-005",
+      "node_type": "REQUIREMENT",
+      "block_index": 32,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L2-001",
+      "node_type": "REQUIREMENT",
+      "block_index": 33,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L2-002",
+      "node_type": "REQUIREMENT",
+      "block_index": 34,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "MEDIUM",
+      "parse_uncertain_tag": true,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L2-003",
+      "node_type": "REQUIREMENT",
+      "block_index": 35,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L2-004",
+      "node_type": "REQUIREMENT",
+      "block_index": 36,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L2-005",
+      "node_type": "REQUIREMENT",
+      "block_index": 37,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L2-006",
+      "node_type": "REQUIREMENT",
+      "block_index": 38,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-REQ-L2-007",
+      "node_type": "REQUIREMENT",
+      "block_index": 39,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-DEC-001",
+      "node_type": "DECISION",
+      "block_index": 40,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-DEC-002",
+      "node_type": "DECISION",
+      "block_index": 41,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-DEC-003",
+      "node_type": "DECISION",
+      "block_index": 42,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-DEC-004",
+      "node_type": "DECISION",
+      "block_index": 43,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    },
+    {
+      "node_id": "STAGE3:AXI-DEC-005",
+      "node_type": "DECISION",
+      "block_index": 44,
+      "version_ok": true,
+      "last_updated_ok": true,
+      "confidence": "HIGH",
+      "parse_uncertain_tag": false,
+      "issues": []
+    }
+  ]
+}

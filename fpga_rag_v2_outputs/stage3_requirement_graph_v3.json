@@ -1,0 +1,4729 @@
+{
+  "nodes": [
+    {
+      "id": "STAGE3:AXI-DEC-001",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-B",
+      "name": "Proje oluşturma ve yönetimi için CLI-first yaklaşım",
+      "attributes": {
+        "decision_id": "AXI-DEC-001",
+        "title": "Proje oluşturma ve yönetimi için CLI-first yaklaşım",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "AXI-REQ-L1-004",
+          "AXI-REQ-L0-001"
+        ],
+        "chosen_option": "TCL batch mode (vivado -mode batch -source script.tcl)",
+        "alternatives": [
+          {
+            "option": "Vivado GUI ile interaktif tasarım",
+            "rejected_because": "GUI adımları tekrarlanamaz — \"hangi butona basıldı?\" kaybolur. Eğitim projesinde her adımın açık olması gerekir. CI/CD entegrasyonu imkansız.\n"
+          },
+          {
+            "option": "Makefile + partial TCL",
+            "rejected_because": "Vivado'nun kendi batch mode'u doğrudan Tcl source komutuyla çalışır. Make katmanı gereksiz karmaşıklık ekler.\n"
+          },
+          {
+            "option": "Python (pyvivado / fusesoc)",
+            "rejected_because": "Ek bağımlılık. Vivado native olarak TCL destekliyor.\n"
+          }
+        ],
+        "consequences": [
+          "Her adım script olarak kaydedilir → versiyon kontrolü mümkün",
+          "~8-20 saniyede proje oluşturma (GUI'de 5-10 dakika)",
+          "Hata durumunda script düzenlenir ve tekrar çalıştırılır"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 40
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-DEC-002",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-B",
+      "name": "Eğitim örneklerinin kademeli yapılandırılması",
+      "attributes": {
+        "decision_id": "AXI-DEC-002",
+        "title": "Eğitim örneklerinin kademeli yapılandırılması",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "AXI-REQ-L0-001",
+          "AXI-REQ-L1-001",
+          "AXI-REQ-L1-002"
+        ],
+        "chosen_option": "Seviye 1: Standalone GPIO → Seviye 2: Minimal MicroBlaze → Seviye 3: MicroBlaze + AXI GPIO",
+        "alternatives": [
+          {
+            "option": "Tek monolitik örnek (tam MicroBlaze + GPIO + UART + DDR)",
+            "rejected_because": "Karmaşıklık çok yüksek. DMA-Audio projesinin BD'si 745 satırlık TCL — yeni başlayan biri bunu anlayamaz.\n"
+          },
+          {
+            "option": "AXI waveform seviyesinde başlama",
+            "rejected_because": "Çok düşük seviye. Pratik değeri düşük.\n"
+          },
+          {
+            "option": "Zynq PS tabanlı öğretim",
+            "rejected_because": "Nexys Video'da Zynq yok. Ayrıca Zynq AXI'yı \"bedava\" verir.\n"
+          }
+        ],
+        "consequences": [
+          "Her seviyenin bağımsız TCL scripti var",
+          "Seviye 2 çıktısı, Seviye 3'ün girdisi olabilir",
+          "Öğrenci her seviyede durup sentez yapıp doğrulayabilir"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 41
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-DEC-003",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-B",
+      "name": "Soft işlemci olarak MicroBlaze v11.0 seçimi",
+      "attributes": {
+        "decision_id": "AXI-DEC-003",
+        "title": "Soft işlemci olarak MicroBlaze v11.0 seçimi",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "AXI-REQ-L1-002"
+        ],
+        "chosen_option": "MicroBlaze v11.0 (Vivado 2025.1 default)",
+        "alternatives": [
+          {
+            "option": "RISC-V soft core (VexRiscv, PicoRV32, NEORV32)",
+            "rejected_because": "Vivado Block Automation RISC-V desteklemiyor. LMB, AXI Interconnect, Reset Controller, MDM otomatik oluşturulamaz.\n"
+          },
+          {
+            "option": "Zynq PS (ARM Cortex-A9)",
+            "rejected_because": "Nexys Video'da Zynq yok.\n"
+          },
+          {
+            "option": "MicroBlaze v10.0 (eski versiyon)",
+            "rejected_because": "Vivado 2025.1'de v10.0 deprecated olabilir.\n"
+          }
+        ],
+        "consequences": [
+          "Block Automation tam destek",
+          "~1000 LUT kullanım (xc7a200t'nin %0.7'si)",
+          "Vitis/SDK ile C programlama mümkün"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 42
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-DEC-004",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-B",
+      "name": "MicroBlaze local memory boyutu 8 KB olarak belirlenmesi",
+      "attributes": {
+        "decision_id": "AXI-DEC-004",
+        "title": "MicroBlaze local memory boyutu 8 KB olarak belirlenmesi",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "AXI-REQ-L2-004"
+        ],
+        "chosen_option": "8 KB shared BRAM (instruction + data)",
+        "alternatives": [
+          {
+            "option": "32 KB veya 64 KB LMB BRAM",
+            "rejected_because": "Eğitim projesi için gereksiz BRAM tüketimi.\n"
+          },
+          {
+            "option": "4 KB",
+            "rejected_because": "Xilinx Block Automation minimum 8 KB destekliyor.\n"
+          },
+          {
+            "option": "DDR bellek (MIG)",
+            "rejected_because": "MIG IP çok karmaşık. Eğitim odağını kaydırır.\n"
+          }
+        ],
+        "consequences": [
+          "Sadece 2 BRAM bloğu (%0.55)",
+          "DDR gerekmeyen basit test programları için yeterli"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 43
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-DEC-005",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-B",
+      "name": "Hedef board olarak Nexys Video (Artix-7 200T) seçimi",
+      "attributes": {
+        "decision_id": "AXI-DEC-005",
+        "title": "Hedef board olarak Nexys Video (Artix-7 200T) seçimi",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "AXI-REQ-L0-001"
+        ],
+        "chosen_option": "Digilent Nexys Video (xc7a200tsbg484-1)",
+        "alternatives": [
+          {
+            "option": "Nexys A7-100T",
+            "rejected_because": "Daha küçük FPGA. Nexys Video'nun HDMI, Ethernet, DDR3 gibi zengin I/O'ları gelecekte daha karmaşık örnekler eklemeye olanak tanır.\n"
+          },
+          {
+            "option": "Basys 3 (Artix-7 35T)",
+            "rejected_because": "Çok küçük — genişleme alanı sınırlı.\n"
+          },
+          {
+            "option": "ZedBoard / PYNQ (Zynq tabanlı)",
+            "rejected_because": "Zynq PS, AXI altyapısını \"bedava\" verir — öğrenci AXI'yı explicit olarak kurmayı öğrenemez.\n"
+          }
+        ],
+        "consequences": [
+          "134,600 LUT, 365 BRAM — geniş genişleme alanı",
+          "Differential clock (LVDS R4/T4) kullanılabilir",
+          "~%1 kaynak kullanımı — çok fazla headroom"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 44
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L0-001",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L0-001",
+      "attributes": {
+        "req_id": "AXI-REQ-L0-001",
+        "level": "L0",
+        "type": "educational",
+        "priority": "must",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "Nexys Video board üzerinde AXI bus mimarisi örnekleri çalıştırılır",
+          "Basit GPIO'dan MicroBlaze+AXI sistemine kademeli ilerleme sağlanır",
+          "TCL otomasyon ile tüm örnekler yeniden üretilebilir",
+          "Sentez başarıyla tamamlanır ve timing karşılanır (WNS ≥ 0 ns)",
+          "Kaynak kullanımı < %5 (eğitim projesi)"
+        ],
+        "constraints": [
+          {
+            "type": "board",
+            "spec": "Digilent Nexys Video (xc7a200tsbg484-1)"
+          },
+          {
+            "type": "tool",
+            "spec": "Vivado 2025.1"
+          },
+          {
+            "type": "methodology",
+            "spec": "CLI-first — tüm adımlar TCL script ile yapılabilmeli"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 27
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L1-001",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L1-001",
+      "attributes": {
+        "req_id": "AXI-REQ-L1-001",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "AXI GPIO IP v2.0 ile 8-bit LED çıkışı kontrol edilir",
+          "Standalone modda GPIO IP'nin AXI arayüzü tie-off edilir",
+          "MicroBlaze modunda GPIO IP, AXI Interconnect üzerinden erişilir",
+          "0x40000000 adresine yazılan değer LED'lerde görünür"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Xilinx AXI GPIO v2.0, C_GPIO_WIDTH=8, C_ALL_OUTPUTS=1"
+          },
+          {
+            "type": "pin",
+            "spec": "LED[0:7] → T14, T15, T16, U16, V15, W16, W15, Y13 (LVCMOS25)"
+          },
+          {
+            "type": "address",
+            "spec": "0x40000000 - 0x4000FFFF (64 KB)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 28
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L1-002",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L1-002",
+      "attributes": {
+        "req_id": "AXI-REQ-L1-002",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "MicroBlaze v11.0 soft işlemci çalışır",
+          "AXI Master portu ile periferiklere erişim sağlanır",
+          "8 KB LMB BRAM ile instruction/data depolanır",
+          "JTAG üzerinden program yüklenebilir"
+        ],
+        "constraints": [
+          {
+            "type": "processor",
+            "spec": "MicroBlaze v11.0, 32-bit RISC, debug enabled, D_AXI=1"
+          },
+          {
+            "type": "memory",
+            "spec": "8 KB LMB BRAM (shared I+D)"
+          },
+          {
+            "type": "bus",
+            "spec": "AXI4-Lite via AXI Interconnect v2.1 (1M × 1S)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 29
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L1-003",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L1-003",
+      "attributes": {
+        "req_id": "AXI-REQ-L1-003",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "100 MHz PLL/MMCM ile stabil clock üretilir",
+          "Clock lock sinyali ile senkronize reset dağıtılır",
+          "8 KB dual-port BRAM instruction ve data için paylaşılır",
+          "JTAG debug modülü (MDM) erişim sağlar"
+        ],
+        "constraints": [
+          {
+            "type": "clock",
+            "spec": "Clock Wizard v6.0, 100 MHz input (R4, LVCMOS33 veya LVDS), 100 MHz output"
+          },
+          {
+            "type": "reset",
+            "spec": "Processor System Reset v5.0, ext_reset ← G4 (active-low)"
+          },
+          {
+            "type": "memory",
+            "spec": "Block Memory Generator v8.4, 8 KB true dual-port"
+          },
+          {
+            "type": "debug",
+            "spec": "MDM v3.2, JTAG + UART"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 30
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L1-004",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L1-004",
+      "attributes": {
+        "req_id": "AXI-REQ-L1-004",
+        "level": "L1",
+        "type": "non-functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "create_axi_simple_gpio.tcl → standalone GPIO projesi oluşturur (~8 saniye)",
+          "create_minimal_microblaze.tcl → minimal MicroBlaze BD oluşturur (~20 saniye)",
+          "add_axi_gpio.tcl → mevcut projeye GPIO ekler (~10 saniye)",
+          "run_synthesis.tcl → sentez başlatır ve rapor üretir (~4 dakika)",
+          "Tüm script'ler vivado -mode batch ile çalışır"
+        ],
+        "constraints": [
+          {
+            "type": "tool",
+            "spec": "Vivado 2025.1, TCL batch mode"
+          },
+          {
+            "type": "script_count",
+            "spec": "4 çalışan script (create_simple + create_mb + add_gpio + synth)"
+          },
+          {
+            "type": "reproducibility",
+            "spec": "Aynı Vivado versiyonunda deterministik sonuç"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 31
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L1-005",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L1-005",
+      "attributes": {
+        "req_id": "AXI-REQ-L1-005",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "Clock dağıtımı: clk_wiz → BUFG → MicroBlaze + AXI fabric + peripherals",
+          "Reset zinciri: ext_reset (G4) → proc_sys_reset → peripheral_aresetn + mb_reset",
+          "PLL lock kontrolü: clk_wiz.locked → proc_sys_reset.dcm_locked",
+          "AXI-Lite handshake: MicroBlaze M_AXI_DP → AXI Interconnect → GPIO s_axi",
+          "Standalone modda AXI tie-off: awvalid=0, arvalid=0, wvalid=0, bready=1, rready=1"
+        ],
+        "constraints": [
+          {
+            "type": "protocol",
+            "spec": "AXI4-Lite: awvalid/awready, wvalid/wready, bvalid/bready, arvalid/arready, rvalid/rready"
+          },
+          {
+            "type": "reset",
+            "spec": "Active-low reset (aresetn), board reset G4 (LVCMOS15, active-low)"
+          },
+          {
+            "type": "clock",
+            "spec": "Tek clock domain: 100 MHz (PLL stabilized)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 32
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L2-001",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L2-001",
+      "attributes": {
+        "req_id": "AXI-REQ-L2-001",
+        "level": "L2",
+        "type": "functional",
+        "priority": "should",
+        "parent": "AXI-REQ-L1-001",
+        "status": "active",
+        "implementing_component": "axi_gpio_wrapper",
+        "source_file": "vivado_axi_simple/axi_gpio_wrapper.v",
+        "source_doc": "SDOC-B-001",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "AXI GPIO IP sarmalanır, GPIO I/O portları üst seviyeye çıkarılır",
+          "AXI handshake sinyalleri deassert edilir (awvalid=0, arvalid=0, wvalid=0)",
+          "Bready=1 ve rready=1 ile slave response'lar kabul edilir",
+          "gpio_io_i ← switches[7:0], gpio_io_o → leds[7:0]"
+        ],
+        "constraints": [
+          {
+            "type": "interface",
+            "spec": "AXI-Lite slave (tüm portlar tie-off)"
+          },
+          {
+            "type": "data_width",
+            "spec": "8-bit GPIO giriş/çıkış"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 33
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L2-002",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L2-002",
+      "attributes": {
+        "req_id": "AXI-REQ-L2-002",
+        "level": "L2",
+        "type": "functional",
+        "priority": "could",
+        "parent": "AXI-REQ-L1-001",
+        "status": "planned",
+        "implementing_component": "simple_top",
+        "source_file": "[MISSING_IN_WORKSPACE] simple_working/simple_project.srcs/sources_1/new/simple_top.v",
+        "source_doc": "SDOC-B-002",
+        "confidence": "MEDIUM",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "4-bit counter her clock cycle'da 1 artar",
+          "Senkron reset ile sayaç sıfırlanır",
+          "Vivado sentez doğrulaması geçer"
+        ],
+        "constraints": [
+          {
+            "type": "data_width",
+            "spec": "4-bit LED çıkışı"
+          },
+          {
+            "type": "timing",
+            "spec": "100 MHz clock"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 34
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L2-003",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L2-003",
+      "attributes": {
+        "req_id": "AXI-REQ-L2-003",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L1-003",
+        "status": "active",
+        "implementing_component": "clk_wiz_1 (axi_gpio_bd) / clk_wiz_0 (minimal_mb)",
+        "source_file": "create_minimal_microblaze.tcl, axi_gpio_bd.bd",
+        "source_doc": "SDOC-B-006, SDOC-B-003",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "100 MHz harici clock girişinden 100 MHz stabil PLL/MMCM çıkışı üretilir",
+          "locked sinyali reset controller'a bağlanır",
+          "Single-ended (LVCMOS33, R4) veya differential (LVDS, R4/T4) giriş desteklenir"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Xilinx Clocking Wizard v6.0"
+          },
+          {
+            "type": "input",
+            "spec": "Nexys Video: R4 (100 MHz), iki XDC varyantı (SE ve diff)"
+          },
+          {
+            "type": "output",
+            "spec": "100 MHz (tek çıkış)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 35
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L2-004",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L2-004",
+      "attributes": {
+        "req_id": "AXI-REQ-L2-004",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L1-003",
+        "status": "active",
+        "implementing_component": "lmb_bram_0, dlmb_v10, ilmb_v10, dlmb_bram_if_cntlr, ilmb_bram_if_cntlr",
+        "source_file": "create_minimal_microblaze.tcl (block automation)",
+        "source_doc": "SDOC-B-006",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "8 KB dual-port BRAM instruction ve data memory için paylaşılır",
+          "LMB data bus ve LMB instruction bus ayrı ayrı çalışır",
+          "Block Automation ile otomatik oluşturulur"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "LMB v10 v3.0 (×2), LMB BRAM If Cntlr v4.0 (×2), Block Memory Generator v8.4"
+          },
+          {
+            "type": "memory_size",
+            "spec": "8 KB (Block Automation default)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 36
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L2-005",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L2-005",
+      "attributes": {
+        "req_id": "AXI-REQ-L2-005",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L1-002",
+        "status": "active",
+        "implementing_component": "microblaze_0_axi_periph",
+        "source_file": "add_axi_gpio.tcl",
+        "source_doc": "SDOC-B-007",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "1 Master (MicroBlaze M_AXI_DP) × 1 Slave (AXI GPIO) konfigürasyonunda çalışır",
+          "AXI4-Lite protokolü ile adres decode yapılır",
+          "0x40000000 adresi GPIO'ya yönlendirilir"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "AXI Interconnect v2.1 (1M × 1S)"
+          },
+          {
+            "type": "protocol",
+            "spec": "AXI4-Lite"
+          },
+          {
+            "type": "address",
+            "spec": "0x40000000 - 0x4000FFFF → AXI GPIO"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 37
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L2-006",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L2-006",
+      "attributes": {
+        "req_id": "AXI-REQ-L2-006",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "AXI-REQ-L1-003",
+        "status": "active",
+        "implementing_component": "rst_clk_wiz_1_100M",
+        "source_file": "create_minimal_microblaze.tcl",
+        "source_doc": "SDOC-B-006",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "Clock Wizard locked → dcm_locked bağlantısı ile PLL stabil kontrolü yapılır",
+          "peripheral_aresetn (active-low) AXI periferiklere dağıtılır",
+          "mb_reset MicroBlaze'e bağlanır",
+          "Harici reset butonu (G4, active-low) desteklenir"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Processor System Reset v5.0"
+          },
+          {
+            "type": "signal",
+            "spec": "ext_reset_in ← board reset, dcm_locked ← clk_wiz locked"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 38
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:AXI-REQ-L2-007",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-B",
+      "name": "AXI-REQ-L2-007",
+      "attributes": {
+        "req_id": "AXI-REQ-L2-007",
+        "level": "L2",
+        "type": "functional",
+        "priority": "should",
+        "parent": "AXI-REQ-L1-003",
+        "status": "active",
+        "implementing_component": "mdm_1",
+        "source_file": "create_minimal_microblaze.tcl",
+        "source_doc": "SDOC-B-006",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "JTAG üzerinden MicroBlaze debug erişimi sağlanır",
+          "MDM UART aktiftir (seri konsol)",
+          "Vitis/SDK'dan program yükleme ve breakpoint desteği çalışır"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "MDM v3.2, C_USE_UART=1"
+          },
+          {
+            "type": "interface",
+            "spec": "MBDEBUG_0 ↔ MicroBlaze DEBUG, UART ↔ external (XDC'de pin tanımlı)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 39
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-DEC-001",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-A",
+      "name": "Ses çıkış yöntemi olarak PWM seçimi",
+      "attributes": {
+        "decision_id": "DMA-DEC-001",
+        "title": "Ses çıkış yöntemi olarak PWM seçimi",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "DMA-REQ-L1-002",
+          "DMA-REQ-L2-002"
+        ],
+        "chosen_option": "FPGA dahili PWM + onboard SSM2377 amplifier",
+        "alternatives": [
+          {
+            "option": "I2S DAC (Pmod I2S veya harici)",
+            "rejected_because": "Nexys A7-100T board'unda I2S DAC çipi yok. Pmod I2S ek donanım gerektirir — demo projesi olarak board-only çalışması hedefleniyor. Ayrıca I2S DAC bit-perfect ses verir ama bu demo için 8-bit PWM kalitesi yeterlidir.\n"
+          },
+          {
+            "option": "Sigma-Delta DAC (FPGA RTL)",
+            "rejected_because": "Daha yüksek çözünürlük sağlar ama tasarım karmaşıklığı artar. Nexys A7'deki audio amplifier zaten PWM girişli (SSM2377), sigma-delta çıkışı board'un analog filtresiyle uyumsuz olabilir.\n"
+          },
+          {
+            "option": "Board'daki onboard mikrofon girişini kullanma (PDM)",
+            "rejected_because": "Mikrofon giriş yönlü — çıkış için kullanılamaz. Ayrıca PDM decode ek mantık gerektirir.\n"
+          }
+        ],
+        "consequences": [
+          "Ses kalitesi 8-bit ile sınırlı (256 seviye PWM)",
+          "Mono çıkış (board'da tek amplifier)",
+          "Ek donanım gerekmez — board-only demo",
+          "Basit RTL implementasyonu (counter + comparator)"
+        ],
+        "rationale_detail": "Board şemasında audio çıkış yolu: FPGA pin (A11) → RC low-pass filter → SSM2377 amplifier → 3.5mm jack. Bu yol PWM için optimize edilmiş. Board tasarımcısı zaten bu kullanımı öngörmüş."
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 22
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-DEC-002",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-A",
+      "name": "Ses veri akışı için MicroBlaze + AXI DMA mimarisi",
+      "attributes": {
+        "decision_id": "DMA-DEC-002",
+        "title": "Ses veri akışı için MicroBlaze + AXI DMA mimarisi",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "DMA-REQ-L1-001",
+          "DMA-REQ-L1-003"
+        ],
+        "chosen_option": "MicroBlaze soft processor + AXI DMA (simple mode)",
+        "alternatives": [
+          {
+            "option": "Tamamen RTL tabanlı ses pipeline (FSM kontrollü)",
+            "rejected_because": "WAV header parsing, UART protokolü, mod yönetimi gibi kontrol görevleri pure RTL'de çok karmaşık. C kodunda 395 satır — Verilog'da binlerce satır olurdu. Ayrıca UART'tan WAV alma gibi değişken uzunluklu protokol işlemleri FSM ile verimsiz.\n"
+          },
+          {
+            "option": "DMA yerine CPU-driven memcpy ile veri aktarımı",
+            "rejected_because": "MicroBlaze 96 kHz × 8-bit = 768 kbps veriyi sürekli kopyalamak zorunda kalır. Cache miss'leri ve interrupt gecikmeleri ses kesintilerine (audio glitch) neden olur. DMA donanımsal olarak kesintisiz aktarım sağlar.\n"
+          },
+          {
+            "option": "AXI DMA scatter-gather mode",
+            "rejected_because": "SG mode daha karmaşık (BD ring management), bu demo için gereksiz. Simple mode, tek bir buffer transfer'i için yeterli. helloworld.c'deki init_dma() fonksiyonu SG modunu açıkça reddeder (kaynak: helloworld.c:50 — \"ERROR! Device configured as SG mode.\").\n"
+          }
+        ],
+        "consequences": [
+          "MicroBlaze ~1000 LUT kullanır ama kontrol esnekliği sağlar",
+          "SDK/BSP gerekli → build süreci uzar",
+          "DMA interrupt handler mevcut ama kullanılmıyor (polling)",
+          "WAV parser, mod yönetimi C'de trivial"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 23
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-DEC-003",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-A",
+      "name": "DMA ↔ Audio arası clock domain crossing yöntemi",
+      "attributes": {
+        "decision_id": "DMA-DEC-003",
+        "title": "DMA ↔ Audio arası clock domain crossing yöntemi",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "DMA-REQ-L2-004",
+          "DMA-REQ-L1-004"
+        ],
+        "chosen_option": "Xilinx FIFO Generator IP (dual-clock, independent clocks mode)",
+        "alternatives": [
+          {
+            "option": "Custom async FIFO (RTL gray-code)",
+            "rejected_because": "Metastabilite riski. Xilinx IP silicon-verified, gray-code pointer senkronizasyonu, BRAM primitive optimizasyonu built-in. Custom FIFO'da CDC hataları simülasyonda yakalanması çok zor — sadece uzun süreli hardware testinde ortaya çıkabilir.\n"
+          },
+          {
+            "option": "Tek clock domain (tüm sistemi 24.576 MHz'de çalıştır)",
+            "rejected_because": "DDR2 MIG minimum 81 MHz ui_clk gerektirir. MicroBlaze da bu hızda daha verimli çalışır. 24.576 MHz'de DDR2 çalışmaz.\n"
+          },
+          {
+            "option": "Handshake-based CDC (req/ack protocol)",
+            "rejected_because": "Streaming veri için throughput çok düşük. Her sample için handshake overhead kabul edilemez. FIFO doğal bir bursty-to- continuous converter — DMA burst geldiğinde hızlıca dolar, PWM tarafında yavaşça boşalır.\n"
+          }
+        ],
+        "consequences": [
+          "4096 × 32-bit FIFO ~ 16 KB → BRAM kullanır",
+          "~170 ms buffer latency (4096 × 4 / 96 kHz)",
+          "DMA burst timing jitter'ı absorbe edilir",
+          "Metastabilite riski sıfır (Xilinx IP garantisi)"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 24
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-DEC-004",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-A",
+      "name": "Ses çıkış çözünürlüğü 8-bit olarak belirlenmesi",
+      "attributes": {
+        "decision_id": "DMA-DEC-004",
+        "title": "Ses çıkış çözünürlüğü 8-bit olarak belirlenmesi",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "DMA-REQ-L2-002",
+          "DMA-REQ-L2-005"
+        ],
+        "chosen_option": "8-bit unsigned PWM (256 seviye)",
+        "alternatives": [
+          {
+            "option": "16-bit PWM",
+            "rejected_because": "16-bit PWM için 24.576 MHz / 65536 = 375 Hz carrier frequency — ses bandında! Audible artifacts oluşur. 8-bit ile 24.576 MHz / 256 = 96 kHz carrier — ses bandının çok üstünde, RC filtresi ile temiz analog sinyal elde edilir.\n"
+          },
+          {
+            "option": "Multi-bit (sigma-delta) PWM",
+            "rejected_because": "Daha karmaşık RTL, board'daki analog filtre buna uygun olmayabilir. Demo kapsamında gereksiz karmaşıklık.\n"
+          },
+          {
+            "option": "12-bit PWM (uzlaşma)",
+            "rejected_because": "24.576 MHz / 4096 = 6 kHz carrier — hâlâ ses bandında (20 Hz-20 kHz). 8-bit tek güvenli seçenek.\n"
+          }
+        ],
+        "consequences": [
+          "Ses kalitesi telefon kalitesinde (~48 dB SNR)",
+          "16-bit WAV dosyaları truncate ediliyor → kalite kaybı",
+          "Basit donanım: tek counter + tek comparator"
+        ],
+        "rationale_detail": "PWM carrier frekansı = clock / 2^N. Duyulabilir ses 20 kHz'e kadar. Carrier duyulmamalı. 24.576 MHz / 2^8 = 96 kHz > 20 kHz ✓ 24.576 MHz / 2^12 = 6 kHz < 20 kHz ✗ Dolayısıyla 8-bit, bu clock frekansında mümkün olan maksimum çözünürlük."
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 25
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-DEC-005",
+      "node_type": "DECISION",
+      "project_id": "PROJECT-A",
+      "name": "Interrupt controller kurulması ama yazılımda polling kullanılması",
+      "attributes": {
+        "decision_id": "DMA-DEC-005",
+        "title": "Interrupt controller kurulması ama yazılımda polling kullanılması",
+        "confidence": "MEDIUM",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "related_requirements": [
+          "DMA-REQ-L2-011",
+          "DMA-REQ-L2-006"
+        ],
+        "chosen_option": "Donanımda interrupt mevcut, yazılımda polling",
+        "alternatives": [
+          {
+            "option": "Interrupt-driven tam asenkron yazılım",
+            "rejected_because": "Demo yazılımı basit tutulmak isteniyor. Interrupt handler'lar ISR context, stack management, race condition gibi karmaşıklık ekler. Polling tabanlı main loop, adım adım okunabilir eğitim kodu üretir.\n"
+          },
+          {
+            "option": "Interrupt controller hiç koymamak",
+            "rejected_because": "Gelecekte interrupt-driven moda geçiş istenebilir. Donanım hazır olması yazılım güncelleme maliyetini düşürür. IP ekleme maliyeti düşük (~100 LUT).\n"
+          }
+        ],
+        "consequences": [
+          "CPU sürekli meşgul (while(1) döngüsü)",
+          "Buton basılırken DMA transfer aktifse kaçırılabilir",
+          "Donanım kaynağı (INTC, xlconcat) gereksiz kullanılıyor",
+          "Gelecek geliştirme için altyapı hazır"
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 26
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L0-001",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L0-001",
+      "attributes": {
+        "req_id": "DMA-REQ-L0-001",
+        "level": "L0",
+        "type": "functional",
+        "priority": "must",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "Nexys A7-100T üzerinde DMA tabanlı ses akışı gerçekleştirilir",
+          "DDR2 RAM üzerinden ses verisi PWM çıkışa aktarılır",
+          "Kullanıcı butonlarla mod seçimi yapabilir",
+          "UART üzerinden WAV dosyası alınıp oynatılabilir",
+          "Seri terminal (230400 baud) üzerinden etkileşim sağlanır"
+        ],
+        "constraints": [
+          {
+            "type": "board",
+            "spec": "Digilent Nexys A7-100T"
+          },
+          {
+            "type": "tool",
+            "spec": "Vivado 2018.2 + Xilinx SDK"
+          },
+          {
+            "type": "interface",
+            "spec": "PWM Audio çıkış (mono, 8-bit, 96 kHz)"
+          },
+          {
+            "type": "connection",
+            "spec": "MicroUSB ile bilgisayara bağlantı"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 4
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L1-001",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L1-001",
+      "attributes": {
+        "req_id": "DMA-REQ-L1-001",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "AXI DMA MM2S kanalı ile DDR2'den ses verisi stream edilir",
+          "AXI DMA S2MM kanalı ile ses verisi DDR2'ye kaydedilir",
+          "DMA ↔ DDR2 veri yolu AXI Interconnect ile yönetilir",
+          "Dual-clock FIFO ile DMA clock → audio clock geçişi sağlanır"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Xilinx AXI DMA v7.1, simple mode (SG yok), DRE aktif"
+          },
+          {
+            "type": "bandwidth",
+            "spec": "256-byte burst, 27-bit address width"
+          },
+          {
+            "type": "memory",
+            "spec": "MIG 7-Series v4.1, DDR2, 128 MB (0x80000000 base)"
+          },
+          {
+            "type": "interconnect",
+            "spec": "AXI Interconnect, 4 slave / 1 master (DMA MM2S, DMA S2MM, MB DC, MB IC → MIG)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 5
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L1-002",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L1-002",
+      "attributes": {
+        "req_id": "DMA-REQ-L1-002",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "PWM sinyali ile ses çıkışı üretilir (96 kHz sample rate)",
+          "5 buton ile mod seçimi yapılabilir",
+          "16 DIP switch okunabilir",
+          "16 LED + 3 RGB LED kontrol edilebilir",
+          "UART ile bilgisayardan WAV dosyası alınabilir"
+        ],
+        "constraints": [
+          {
+            "type": "pin",
+            "spec": "PWM → A11 (aud_pwm), Enable → D12 (aud_sd), LVCMOS33"
+          },
+          {
+            "type": "interface",
+            "spec": "PWM Audio: Digilent custom bus (pwm + en + gain)"
+          },
+          {
+            "type": "uart",
+            "spec": "AXI UARTLite v2.0, 230400 baud"
+          },
+          {
+            "type": "gpio",
+            "spec": "AXI GPIO dual channel × 2 instance"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 6
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L1-003",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L1-003",
+      "attributes": {
+        "req_id": "DMA-REQ-L1-003",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "MicroBlaze işlemci DMA transferlerini başlatır ve izler",
+          "Yazılımda 5 demo modu yönetilir (pause, HW tone, SW tone, recv WAV, play WAV)",
+          "WAV dosyası header parse edilir (RIFF, fmt, data chunk)",
+          "16-bit audio → 8-bit dönüşümü yapılır",
+          "Yazılım ile 261 Hz sinüs tonu üretilebilir"
+        ],
+        "constraints": [
+          {
+            "type": "processor",
+            "spec": "MicroBlaze v10.0, 32-bit, I-cache + D-cache"
+          },
+          {
+            "type": "memory",
+            "spec": "64 KB LMB BRAM (local) + DDR2 (external)"
+          },
+          {
+            "type": "interrupt",
+            "spec": "AXI INTC v4.1, xlconcat ile DMA + GPIO + UART interrupt birleştirme"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 7
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L1-004",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L1-004",
+      "attributes": {
+        "req_id": "DMA-REQ-L1-004",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "100 MHz harici clock'tan 140.625 MHz (sistem) ve 24.576 MHz (audio) clock üretilir",
+          "MIG DDR2 kontrolcüsü başlatılır, ui_clk (~81 MHz) tüm sistemi besler",
+          "Reset sinyalleri senkronize dağıtılır",
+          "Debug modülü (MDM) JTAG erişimi sağlar",
+          "LMB BRAM instruction ve data erişimi sağlar"
+        ],
+        "constraints": [
+          {
+            "type": "clock",
+            "spec": "clk_wiz_0: 100 MHz → Clk_Out1 (140.625 MHz, MIG sys_clk_i), Clk_Out2 (24.576 MHz, audio)"
+          },
+          {
+            "type": "clock",
+            "spec": "MIG ui_clk (~81 MHz) → MicroBlaze, AXI fabric, DMA, peripherals"
+          },
+          {
+            "type": "reset",
+            "spec": "rst_mig_7series_0_81M (proc_sys_reset v5.0), ext_reset ← MIG ui_clk_sync_rst"
+          },
+          {
+            "type": "debug",
+            "spec": "MDM v3.2, JTAG debug"
+          },
+          {
+            "type": "memory",
+            "spec": "LMB BRAM 64 KB (I+D), MIG DDR2 128 MB"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 8
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L1-005",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L1-005",
+      "attributes": {
+        "req_id": "DMA-REQ-L1-005",
+        "level": "L1",
+        "type": "non-functional",
+        "priority": "could",
+        "parent": "DMA-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "Digilent vivado-scripts submodule ile proje yeniden oluşturulabilir",
+          "design_1.tcl script'i block design'ı tam olarak yeniden üretir",
+          "project_info.tcl ile proje ayarları otomatik yapılandırılır"
+        ],
+        "constraints": [
+          {
+            "type": "tool",
+            "spec": "digilent-vivado-scripts submodule"
+          },
+          {
+            "type": "script",
+            "spec": "design_1.tcl (BD recreation), project_info.tcl (proje config)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 9
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L1-006",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L1-006",
+      "attributes": {
+        "req_id": "DMA-REQ-L1-006",
+        "level": "L1",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L0-001",
+        "status": "active",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "3 clock domain (100 MHz giriş, ~81 MHz MIG fabric, 24.576 MHz audio) arası geçişler güvenli yapılır",
+          "Reset zinciri: MIG ui_clk_sync_rst → proc_sys_reset → peripheral_aresetn/interconnect_aresetn",
+          "AXI-Stream handshake: tvalid/tready protokolü axis2fifo ve tone_generator'da doğru uygulanır",
+          "FIFO status sinyalleri (full/empty) backpressure ve flow control sağlar",
+          "Interrupt sinyalleri: DMA + GPIO + UART → xlconcat → INTC → MicroBlaze INTERRUPT",
+          "PWM enable sinyali (aud_en) FIFO durumuna göre kontrol edilir"
+        ],
+        "constraints": [
+          {
+            "type": "protocol",
+            "spec": "AXI-Stream: tvalid, tready, tlast, tkeep handshake"
+          },
+          {
+            "type": "cdc",
+            "spec": "Dual-clock FIFO gray-code pointer senkronizasyonu"
+          },
+          {
+            "type": "reset",
+            "spec": "Senkronize reset dağıtımı — proc_sys_reset hold time"
+          },
+          {
+            "type": "interrupt",
+            "spec": "xlconcat_0: DMA MM2S + S2MM, xlconcat_1: GPIO_IN + GPIO_OUT + UART"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 10
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-001",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-001",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-001",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-001",
+        "status": "active",
+        "implementing_component": "axis2fifo_0",
+        "source_file": "src/hdl/axis2fifo.v",
+        "source_doc": "SDOC-A-001",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "32-bit AXI-Stream verisinin alt 16 biti FIFO'ya yazılır",
+          "FIFO full durumunda axis_tready deassert edilir (backpressure)",
+          "axis_tvalid & axis_tready koşulunda FIFO write enable aktif olur"
+        ],
+        "constraints": [
+          {
+            "type": "data_width",
+            "spec": "AXI-Stream 32-bit → FIFO 16-bit (üst 16 bit atılır)"
+          },
+          {
+            "type": "interface",
+            "spec": "Xilinx AXI-Stream slave + Xilinx FIFO write master"
+          },
+          {
+            "type": "clock_domain",
+            "spec": "MIG ui_clk (~81 MHz)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 11
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-002",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-002",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-002",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-002",
+        "status": "active",
+        "implementing_component": "fifo2audpwm_0",
+        "source_file": "src/hdl/fifo2audpwm.v",
+        "source_doc": "SDOC-A-002",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "FIFO'dan 32-bit veri okunduğunda 4 adet 8-bit sample çıkarılır",
+          "256 seviyeli counter PWM duty cycle üretir",
+          "FIFO boşken aud_en=0, veri varken aud_en=1 olur",
+          "24.576 MHz clock ile çalışır"
+        ],
+        "constraints": [
+          {
+            "type": "parameter",
+            "spec": "DATA_WIDTH=8, FIFO_DATA_WIDTH=32"
+          },
+          {
+            "type": "interface",
+            "spec": "Xilinx FIFO read + Digilent PWM Audio bus"
+          },
+          {
+            "type": "timing",
+            "spec": "PWM base clock: 24.576 MHz, sample rate: 24.576 MHz / (4 × 256) = 24 kHz per channel"
+          },
+          {
+            "type": "clock_domain",
+            "spec": "clk_wiz_0 Clk_Out2 (24.576 MHz)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 12
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-003",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-003",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-003",
+        "level": "L2",
+        "type": "functional",
+        "priority": "should",
+        "parent": "DMA-REQ-L1-001",
+        "status": "active",
+        "implementing_component": "tone_generator_0",
+        "source_file": "src/hdl/tone_generator.v",
+        "source_doc": "SDOC-A-003",
+        "confidence": "MEDIUM",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "261 Hz (Orta C) sinüs dalgası phase accumulator ile üretilir",
+          "96 kHz sample rate ile AXI-Stream master çıkış verilir",
+          "256 sample'lık paketler halinde TLAST üretilir",
+          "Üretilen veri DMA S2MM kanalına gönderilir"
+        ],
+        "constraints": [
+          {
+            "type": "parameter",
+            "spec": "INCREMENT = 0x00B22D0E, ACCUMULATOR_DEPTH = 32-bit"
+          },
+          {
+            "type": "interface",
+            "spec": "AXI-Stream master (32-bit, 16-bit signed audio payload)"
+          },
+          {
+            "type": "clock_domain",
+            "spec": "MIG ui_clk (~81 MHz)"
+          }
+        ],
+        "known_issues": [
+          {
+            "ref": "ISSUE-A-002",
+            "detail": "Yazılımda devre dışı: helloworld.c:386 — case DEMO_MODE_HW_TONE_GEN: break; (dma_forward çağrılmıyor)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 13
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-004",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-004",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-004",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-001",
+        "status": "active",
+        "implementing_component": "fifo_generator_0",
+        "source_file": "design_1.tcl (IP instance)",
+        "source_doc": "SDOC-A-005",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "MIG ui_clk (~81 MHz, write) → 24.576 MHz (read) clock geçişi sağlanır",
+          "4096 × 32-bit derinlikte buffer sağlanır",
+          "Veri kaybı veya metastabilite oluşmaz",
+          "Full ve empty flag'leri upstream/downstream modüllere bildirilir"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Xilinx FIFO Generator v13.2, independent clocks mode"
+          },
+          {
+            "type": "depth",
+            "spec": "4096 word × 32-bit"
+          },
+          {
+            "type": "timing",
+            "spec": "Write clock: MIG ui_clk (~81 MHz), Read clock: clk_wiz_0 Clk_Out2 (24.576 MHz)"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 14
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-005",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-005",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-005",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-002",
+        "status": "active",
+        "implementing_component": "axi_uartlite_0 + helloworld.c (recv_wav, play_wav)",
+        "source_file": "sdk/appsrc/helloworld.c",
+        "source_doc": "SDOC-A-004",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "UART üzerinden RIFF/WAV header parse edilir (header, format, data chunk)",
+          "96 kHz sample rate doğrulanır",
+          "8-bit ve 16-bit audio kabul edilir",
+          "16-bit audio → 8-bit unsigned dönüşümü yapılır: (u8)((u16)(sample + 32768) >> 8)",
+          "Alınan ses verisi DDR2'ye yazılır ve DMA ile oynatılır"
+        ],
+        "constraints": [
+          {
+            "type": "uart",
+            "spec": "AXI UARTLite v2.0, 230400 baud, polling mode"
+          },
+          {
+            "type": "format",
+            "spec": "WAV: RIFF header (12B) + fmt chunk (24B) + data chunk (8B + data)"
+          },
+          {
+            "type": "memory",
+            "spec": "max_file_size = 0x7FFFFF (8 MB malloc)"
+          },
+          {
+            "type": "limitation",
+            "spec": "Sadece 96 kHz sample rate, mono/stereo ayrımı yok"
+          }
+        ],
+        "known_issues": [
+          {
+            "ref": "ISSUE-A-004",
+            "detail": "16-bit → 8-bit truncation ses kalitesini düşürür"
+          },
+          {
+            "ref": "ISSUE-A-005",
+            "detail": "WAV dosyaları bellekte kalıcı saklanmaz"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 15
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-006",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-006",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-006",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-002",
+        "status": "active",
+        "implementing_component": "GPIO_IN (axi_gpio), GPIO_OUT (axi_gpio)",
+        "source_file": "design_1.tcl + sdk/appsrc/helloworld.c",
+        "source_doc": "SDOC-A-005, SDOC-A-004",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "5 buton okunur: C=Pause(0x01), U=HW Tone(0x02), L=Recv WAV(0x04), R=Play WAV(0x08), D=SW Tone(0x10)",
+          "16 DIP switch okunur",
+          "16 LED ve 3 RGB LED yazılır",
+          "Buton edge detection (positive edge) polling ile çalışır"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "GPIO_IN: AXI GPIO dual channel — CH1: buttons 5-bit, CH2: switches 16-bit"
+          },
+          {
+            "type": "ip",
+            "spec": "GPIO_OUT: AXI GPIO dual channel — CH1: RGB LEDs, CH2: LEDs 16-bit"
+          },
+          {
+            "type": "address",
+            "spec": "GPIO_IN: 0x40000000, GPIO_OUT: 0x40010000"
+          },
+          {
+            "type": "interrupt",
+            "spec": "GPIO_IN.ip2intc_irpt → xlconcat_1.In0, GPIO_OUT.ip2intc_irpt → xlconcat_1.In1"
+          }
+        ],
+        "known_issues": [
+          {
+            "ref": "ISSUE-A-006",
+            "detail": "Polling bazlı — yüksek CPU yükü, buton kaçırma riski"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 16
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-007",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-007",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-007",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-003",
+        "status": "active",
+        "implementing_component": "helloworld.c::dma_sw_tone_gen()",
+        "source_file": "sdk/appsrc/helloworld.c",
+        "source_doc": "SDOC-A-004",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "MicroBlaze üzerinde 261 Hz sinüs dalgası hesaplanır",
+          "Phase accumulator (0x00B22D0E increment) ile sample üretilir",
+          "128 byte'lık buffer'lar halinde DMA MM2S ile gönderilir",
+          "Herhangi bir buton basılınca ton durdurulur",
+          "Varsayılan başlangıç modu olarak çalışır"
+        ],
+        "constraints": [
+          {
+            "type": "algorithm",
+            "spec": "Phase accumulator: accum += 0x00B22D0E, sample = accum >> 24"
+          },
+          {
+            "type": "buffer",
+            "spec": "128 byte malloc buffer, döngüsel DMA gönderim"
+          },
+          {
+            "type": "audio",
+            "spec": "261 Hz, 96 kHz sample rate, 8-bit unsigned"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 17
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-008",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-008",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-008",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-004",
+        "status": "active",
+        "implementing_component": "clk_wiz_0",
+        "source_file": "design_1.tcl",
+        "source_doc": "SDOC-A-005",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "100 MHz harici clock girişinden 2 çıkış üretilir",
+          "Clk_Out1: 140.625 MHz (MIG reference clock)",
+          "Clk_Out2: 24.576 MHz (audio PWM base clock)",
+          "resetn portu harici reset butonuna bağlıdır"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Xilinx Clocking Wizard v6.0"
+          },
+          {
+            "type": "input",
+            "spec": "sys_clock: 100 MHz (E3 pini, LVCMOS33)"
+          },
+          {
+            "type": "output",
+            "spec": "Clk_Out1 → mig_7series_0/sys_clk_i, Clk_Out2 → fifo2audpwm_0/clk + fifo_generator_0/rd_clk"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 18
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-009",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-009",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-009",
+        "level": "L2",
+        "type": "functional",
+        "priority": "must",
+        "parent": "DMA-REQ-L1-004",
+        "status": "active",
+        "implementing_component": "rst_mig_7series_0_81M",
+        "source_file": "design_1.tcl",
+        "source_doc": "SDOC-A-005",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "MIG ui_clk_sync_rst → ext_reset_in bağlantısı ile MIG reset senkronize edilir",
+          "MIG mmcm_locked → dcm_locked bağlantısı ile PLL lock kontrolü yapılır",
+          "peripheral_aresetn tüm AXI periferiklere dağıtılır",
+          "interconnect_aresetn AXI Interconnect'lere dağıtılır"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Xilinx Processor System Reset v5.0"
+          },
+          {
+            "type": "signal",
+            "spec": "slowest_sync_clk ← MIG ui_clk"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 19
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-010",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-010",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-010",
+        "level": "L2",
+        "type": "functional",
+        "priority": "should",
+        "parent": "DMA-REQ-L1-004",
+        "status": "active",
+        "implementing_component": "mdm_1",
+        "source_file": "design_1.tcl",
+        "source_doc": "SDOC-A-005",
+        "confidence": "HIGH",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "JTAG üzerinden MicroBlaze debug erişimi sağlanır",
+          "Program yükleme ve breakpoint desteği mevcuttur"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "Xilinx MDM v3.2"
+          },
+          {
+            "type": "interface",
+            "spec": "MBDEBUG_0 ↔ MicroBlaze DEBUG port"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 20
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:DMA-REQ-L2-011",
+      "node_type": "REQUIREMENT",
+      "project_id": "PROJECT-A",
+      "name": "DMA-REQ-L2-011",
+      "attributes": {
+        "req_id": "DMA-REQ-L2-011",
+        "level": "L2",
+        "type": "functional",
+        "priority": "should",
+        "parent": "DMA-REQ-L1-003",
+        "status": "active",
+        "implementing_component": "microblaze_0_axi_intc + xlconcat_0 + xlconcat_1",
+        "source_file": "design_1.tcl",
+        "source_doc": "SDOC-A-005",
+        "confidence": "MEDIUM",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "acceptance_criteria": [
+          "DMA MM2S + S2MM interrupt'ları birleştirilir (xlconcat_0)",
+          "GPIO_IN + GPIO_OUT + UART interrupt'ları birleştirilir (xlconcat_1)",
+          "MicroBlaze INTERRUPT portuna bağlanır"
+        ],
+        "constraints": [
+          {
+            "type": "ip",
+            "spec": "AXI INTC v4.1 + xlconcat v2.1 (2 instance)"
+          },
+          {
+            "type": "address",
+            "spec": "0x41200000"
+          }
+        ],
+        "known_issues": [
+          {
+            "ref": "ISSUE-A-006",
+            "detail": "Interrupt controller mevcut ama yazılım polling kullanıyor — interrupt handler implement edilmemiş"
+          }
+        ]
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 21
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "STAGE3:OPT:01fd341ed4",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-005 rejected option",
+      "attributes": {
+        "decision": "AXI-DEC-005",
+        "option": "Zynq tabanlı board",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:25638d6289",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-003 rejected option",
+      "attributes": {
+        "decision": "AXI-DEC-003",
+        "option": "RISC-V soft core",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:45a603617b",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-003 chosen option",
+      "attributes": {
+        "decision": "DMA-DEC-003",
+        "option": "Xilinx FIFO Generator IP (dual-clock)",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:46d54a0290",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-005 chosen option",
+      "attributes": {
+        "decision": "AXI-DEC-005",
+        "option": "Nexys Video (Artix-7 200T)",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:4959a0df00",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-003 rejected option",
+      "attributes": {
+        "decision": "DMA-DEC-003",
+        "option": "Custom async FIFO (RTL gray-code)",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:58fb18a231",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-001 rejected option",
+      "attributes": {
+        "decision": "AXI-DEC-001",
+        "option": "Vivado GUI",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:5908e53977",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-004 chosen option",
+      "attributes": {
+        "decision": "DMA-DEC-004",
+        "option": "8-bit unsigned PWM",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:6457c07c8e",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-002 chosen option",
+      "attributes": {
+        "decision": "DMA-DEC-002",
+        "option": "MicroBlaze + AXI DMA (simple mode)",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:8a6f0f5003",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-004 rejected option",
+      "attributes": {
+        "decision": "DMA-DEC-004",
+        "option": "16-bit PWM",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:8b09a068c9",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-001 rejected option",
+      "attributes": {
+        "decision": "DMA-DEC-001",
+        "option": "I2S DAC (Pmod I2S veya harici)",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:a139edb87e",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-002 rejected option",
+      "attributes": {
+        "decision": "DMA-DEC-002",
+        "option": "CPU-driven memcpy",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:a6b1422e35",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-001 chosen option",
+      "attributes": {
+        "decision": "DMA-DEC-001",
+        "option": "FPGA dahili PWM + onboard SSM2377 amplifier",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:b934b9483a",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-002 rejected option",
+      "attributes": {
+        "decision": "DMA-DEC-002",
+        "option": "Tamamen RTL tabanlı ses pipeline",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:c15a9eee3d",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-A",
+      "name": "DMA-DEC-001 rejected option",
+      "attributes": {
+        "decision": "DMA-DEC-001",
+        "option": "Sigma-Delta DAC (FPGA RTL)",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:c62dca4e88",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-001 chosen option",
+      "attributes": {
+        "decision": "AXI-DEC-001",
+        "option": "TCL batch mode",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:cc8efd61fc",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-003 chosen option",
+      "attributes": {
+        "decision": "AXI-DEC-003",
+        "option": "MicroBlaze v11.0",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:fb6e458cfc",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-002 chosen option",
+      "attributes": {
+        "decision": "AXI-DEC-002",
+        "option": "3 seviyeli kademeli öğrenme",
+        "status": "chosen"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:OPT:fd89a4975c",
+      "node_type": "DECISION_OPTION",
+      "project_id": "PROJECT-B",
+      "name": "AXI-DEC-002 rejected option",
+      "attributes": {
+        "decision": "AXI-DEC-002",
+        "option": "Tek monolitik örnek",
+        "status": "rejected"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:PROJECT-A",
+      "node_type": "PROJECT",
+      "project_id": "PROJECT-A",
+      "name": "Nexys-A7-100T-DMA-Audio",
+      "attributes": {
+        "project_id": "PROJECT-A",
+        "name": "Nexys-A7-100T-DMA-Audio",
+        "description": "Digilent Nexys A7-100T üzerinde DMA tabanlı ses akışı demo uygulaması",
+        "board": "Digilent Nexys A7-100T",
+        "fpga_part": "xc7a50ticsg324-1L",
+        "expected_board_part": "xc7a100tcsg324-1",
+        "tool": "Vivado 2018.2 + Xilinx SDK",
+        "developer": "Digilent",
+        "language": [
+          "Verilog",
+          "C"
+        ],
+        "project_type": "application",
+        "root_requirement": "DMA-REQ-L0-001",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "confidence": "HIGH"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 1
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:PROJECT-B",
+      "node_type": "PROJECT",
+      "project_id": "PROJECT-B",
+      "name": "axi_example",
+      "attributes": {
+        "project_id": "PROJECT-B",
+        "name": "axi_example",
+        "description": "AXI bus mimarisi eğitim / validasyon test suite",
+        "board": "Digilent Nexys Video",
+        "fpga_part": "xc7a200tsbg484-1",
+        "tool": "Vivado 2025.1",
+        "developer": "In-house",
+        "language": [
+          "Verilog"
+        ],
+        "project_type": "educational",
+        "root_requirement": "AXI-REQ-L0-001",
+        "version": 1,
+        "last_updated": "2026-02-23",
+        "confidence": "HIGH"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 2
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-001",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-001",
+      "attributes": {
+        "doc_id": "SDOC-A-001",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/axis2fifo.v",
+        "type": "hdl_source",
+        "language": "Verilog",
+        "lines": 36,
+        "description": "AXI-Stream → FIFO dönüştürücü RTL modülü"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-002",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-002",
+      "attributes": {
+        "doc_id": "SDOC-A-002",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/fifo2audpwm.v",
+        "type": "hdl_source",
+        "language": "Verilog",
+        "lines": 38,
+        "description": "FIFO → PWM ses çıkışı dönüştürücü RTL modülü"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-003",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-003",
+      "attributes": {
+        "doc_id": "SDOC-A-003",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/tone_generator.v",
+        "type": "hdl_source",
+        "language": "Verilog",
+        "lines": 73,
+        "description": "Phase accumulator tabanlı donanım ton üreteci"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-004",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-004",
+      "attributes": {
+        "doc_id": "SDOC-A-004",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/sdk/appsrc/helloworld.c",
+        "type": "sw_source",
+        "language": "C",
+        "lines": 395,
+        "description": "MicroBlaze SDK uygulaması — DMA kontrolü, WAV parser, demo modları"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-005",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-005",
+      "attributes": {
+        "doc_id": "SDOC-A-005",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/bd/design_1.tcl",
+        "type": "tcl_script",
+        "lines": 744,
+        "description": "Vivado Block Design recreation script"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-006",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-006",
+      "attributes": {
+        "doc_id": "SDOC-A-006",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/constraints/Nexys-A7-100T-Master.xdc",
+        "type": "constraint",
+        "lines": 211,
+        "description": "Pin ve timing constraint dosyası"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-007",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-007",
+      "attributes": {
+        "doc_id": "SDOC-A-007",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/project_info.tcl",
+        "type": "tcl_script",
+        "description": "Proje konfigürasyon dosyası — part tanımı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-008",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-008",
+      "attributes": {
+        "doc_id": "SDOC-A-008",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/README.md",
+        "type": "documentation",
+        "description": "Proje README — bilinen sorunlar ve kullanım talimatları"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-A-009",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-A",
+      "name": "SDOC-A-009",
+      "attributes": {
+        "doc_id": "SDOC-A-009",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/repo/local/if/pwm_audio/pwm_audio_rtl.xml",
+        "type": "ip_definition",
+        "description": "Custom PWM audio bus interface tanımı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-001",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-001",
+      "attributes": {
+        "doc_id": "SDOC-B-001",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/vivado_axi_simple/axi_gpio_wrapper.v",
+        "type": "hdl_source",
+        "language": "Verilog",
+        "lines": 37,
+        "description": "Standalone AXI GPIO wrapper — AXI tie-off pattern"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-002",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-002",
+      "attributes": {
+        "doc_id": "SDOC-B-002",
+        "path": "[MISSING_IN_WORKSPACE] /Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/simple_working/simple_project.srcs/sources_1/new/simple_top.v",
+        "type": "hdl_source_missing",
+        "language": "Verilog",
+        "lines": 0,
+        "availability": "missing_in_workspace",
+        "description": "4-bit counter test modülü (repo'da doğrulanamadı, PARSE_UNCERTAIN)"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-003",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-003",
+      "attributes": {
+        "doc_id": "SDOC-B-003",
+        "path": "[MISSING_IN_WORKSPACE] /Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/axi_example_build/axi_example_build.srcs/sources_1/bd/axi_gpio_bd/axi_gpio_bd.bd",
+        "type": "block_design_missing",
+        "availability": "missing_in_workspace",
+        "description": "MicroBlaze + GPIO block design (repo'da doğrulanamadı, PARSE_UNCERTAIN)"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-004",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-004",
+      "attributes": {
+        "doc_id": "SDOC-B-004",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/vivado_axi_simple/nexys_video.xdc",
+        "type": "constraint",
+        "lines": 29,
+        "description": "Nexys Video pin constraint dosyası"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-005",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-005",
+      "attributes": {
+        "doc_id": "SDOC-B-005",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/create_axi_simple_gpio.tcl",
+        "type": "tcl_script",
+        "lines": 132,
+        "description": "Standalone GPIO proje oluşturma scripti"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-006",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-006",
+      "attributes": {
+        "doc_id": "SDOC-B-006",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/create_minimal_microblaze.tcl",
+        "type": "tcl_script",
+        "lines": 161,
+        "description": "Minimal MicroBlaze BD oluşturma scripti"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-007",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-007",
+      "attributes": {
+        "doc_id": "SDOC-B-007",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/add_axi_gpio.tcl",
+        "type": "tcl_script",
+        "lines": 156,
+        "description": "Mevcut projeye AXI GPIO ekleme scripti"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-008",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-008",
+      "attributes": {
+        "doc_id": "SDOC-B-008",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/run_synthesis.tcl",
+        "type": "tcl_script",
+        "lines": 81,
+        "description": "Sentez çalıştırma ve rapor üretme scripti"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-009",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-009",
+      "attributes": {
+        "doc_id": "SDOC-B-009",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/SYNTHESIS_RESULTS.md",
+        "type": "documentation",
+        "description": "Sentez sonuçları raporu — timing ve kaynak kullanımı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-010",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-010",
+      "attributes": {
+        "doc_id": "SDOC-B-010",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/utilization_summary.txt",
+        "type": "report",
+        "description": "Detaylı kaynak kullanım raporu"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "STAGE3:SDOC-B-011",
+      "node_type": "SOURCE_DOC",
+      "project_id": "PROJECT-B",
+      "name": "SDOC-B-011",
+      "attributes": {
+        "doc_id": "SDOC-B-011",
+        "path": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/README.md",
+        "type": "documentation",
+        "description": "Proje README — Türkçe/İngilizce dokümantasyon"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 3
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "edges": [
+    {
+      "id": "E:01f21292fe",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:AXI-DEC-001",
+      "target": "STAGE3:OPT:c62dca4e88",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:055c1a7702",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-001",
+      "target": "STAGE3:DMA-REQ-L2-001",
+      "attributes": {
+        "rationale": "DMA çıktısını FIFO'ya dönüştüren ara katman — AXI-Stream ↔ FIFO protokol farkını çözer"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:05fc9cab3c",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-003",
+      "target": "STAGE3:DMA-REQ-L2-007",
+      "attributes": {
+        "rationale": "MicroBlaze üzerinde yazılımla ton üretimi — HW fallback"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:07dfbaf9d0",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:DMA-DEC-002",
+      "target": "STAGE3:DMA-REQ-L1-003",
+      "attributes": {
+        "detail": "MicroBlaze seçimi, WAV parsing ve mod yönetimi karmaşıklığından kaynaklanıyor"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:1481afc123",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:AXI-DEC-004",
+      "target": "STAGE3:AXI-REQ-L2-004",
+      "attributes": {
+        "detail": "8 KB BRAM, minimal kaynak kullanımı ile yeterli program alanı dengesi"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:1ab2bcb446",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:DMA-DEC-004",
+      "target": "STAGE3:OPT:5908e53977",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:1b065a7b4a",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-003",
+      "attributes": {
+        "rationale": "PLL/MMCM clock stabilizasyonu"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:1c6e56e2f3",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-002",
+      "target": "STAGE3:AXI-REQ-L2-005",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 37
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:1f099d37ff",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:DMA-DEC-003",
+      "target": "STAGE3:DMA-REQ-L2-004",
+      "attributes": {
+        "detail": "Dual-clock FIFO seçimi, iki clock domain arasındaki CDC gereksiniminden kaynaklanıyor"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:22680f975f",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-006",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 10
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:229b67a816",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-001",
+      "target": "STAGE3:AXI-REQ-L2-001",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 33
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:26d6e321ac",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-002",
+      "attributes": {
+        "rationale": "Kullanıcı arayüzü (butonlar, LED'ler) ve ses çıkışı (PWM) — dış dünya etkileşimi"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:292bec5c5f",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-002",
+      "target": "STAGE3:DMA-REQ-L2-002",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 12
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:2a836c9e71",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-007",
+      "attributes": {
+        "rationale": "JTAG debug ve UART — geliştirme desteği"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:2d52c4ef68",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-001",
+      "target": "STAGE3:AXI-REQ-L2-002",
+      "attributes": {
+        "rationale": "Minimal counter — toolchain doğrulama"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:3196750542",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-002",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 6
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:32968b7fcf",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:AXI-DEC-001",
+      "target": "STAGE3:AXI-REQ-L1-004",
+      "attributes": {
+        "detail": "CLI-first yaklaşım, eğitim tekrarlanabilirliği gereksiniminden kaynaklanıyor"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:3a4597a277",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-004",
+      "target": "STAGE3:DMA-REQ-L2-009",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 19
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:3ace33d8f8",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:DMA-DEC-001",
+      "target": "STAGE3:OPT:a6b1422e35",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:3b864bea30",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-002",
+      "attributes": {
+        "rationale": "MicroBlaze ile AXI master → slave veri yolu hiyerarşisi"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:3cb2612f48",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-006",
+      "attributes": {
+        "rationale": "Clock domain crossing, handshake, backpressure, interrupt routing — sinyal bütünlüğü"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:3ccf3cc76b",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-004",
+      "target": "STAGE3:DMA-REQ-L2-008",
+      "attributes": {
+        "rationale": "Clock üretimi — 140.625 MHz (MIG) ve 24.576 MHz (audio)"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:3cf1b9f500",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:AXI-DEC-002",
+      "target": "STAGE3:AXI-REQ-L0-001",
+      "attributes": {
+        "detail": "Kademeli yapı, AXI öğrenme eğrisinin dikliğinden kaynaklanıyor"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:41a9f3494f",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-006",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 38
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:45e1ce32c0",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-005",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 9
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:46d13f9856",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:46d54a0290",
+      "target": "STAGE3:OPT:01fd341ed4",
+      "attributes": {
+        "rejection_reason": "Zynq AXI'yı bedava verir — öğrenci explicit kurulum öğrenemez"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:46ffa1fbcf",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-001",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 28
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:493c0b424b",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:a6b1422e35",
+      "target": "STAGE3:OPT:8b09a068c9",
+      "attributes": {
+        "rejection_reason": "Board'da I2S DAC çipi yok, ek donanım gerektirir"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:4c393fc212",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-005",
+      "attributes": {
+        "rationale": "TCL script ile proje yeniden oluşturma — tekrarlanabilirlik"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:4d5fc612a9",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-002",
+      "target": "STAGE3:AXI-REQ-L2-005",
+      "attributes": {
+        "rationale": "AXI Interconnect — master-slave bağlantı altyapısı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:4d65a67d45",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-004",
+      "target": "STAGE3:DMA-REQ-L2-010",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 20
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:521064302a",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-001",
+      "target": "STAGE3:DMA-REQ-L2-003",
+      "attributes": {
+        "rationale": "DMA S2MM kanalına veri üreten kaynak — test ve doğrulama amaçlı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:5455c926e1",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-001",
+      "target": "STAGE3:DMA-REQ-L2-001",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 11
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:56d9cf6221",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-002",
+      "target": "STAGE3:DMA-REQ-L2-006",
+      "attributes": {
+        "rationale": "GPIO ile kullanıcı giriş/çıkış — buton, switch, LED kontrolü"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:578f68f481",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:AXI-DEC-003",
+      "target": "STAGE3:AXI-REQ-L1-002",
+      "attributes": {
+        "detail": "MicroBlaze v11.0, Block Automation tam desteği gereksiniminden kaynaklanıyor"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:5ad577a151",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-001",
+      "target": "STAGE3:AXI-REQ-L2-002",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 34
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:606003b967",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-005",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 32
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:6296f731e9",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-004",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 8
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:64f460bab4",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-002",
+      "target": "STAGE3:DMA-REQ-L2-006",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 16
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:6c5a12c6b2",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-003",
+      "attributes": {
+        "rationale": "DMA kontrolü, WAV parsing, mod yönetimi — yazılım kontrol katmanı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:6d90ef1a1b",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-001",
+      "target": "STAGE3:AXI-REQ-L2-001",
+      "attributes": {
+        "rationale": "Standalone GPIO wrapper — AXI tie-off ile sinyal seviyesi eğitim"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:7640533db9",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-006",
+      "attributes": {
+        "rationale": "Senkronize reset dağıtımı — PLL lock tabanlı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:7dfb5204ae",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-007",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 39
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:7f7f228fd1",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-004",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 31
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:86696830b1",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-001",
+      "attributes": {
+        "rationale": "Ses verisi bellekten ses çıkışına aktarılmalı — veri yolu alt sistemi bu sorumluluğu taşır"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:8731cc17fa",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-002",
+      "target": "STAGE3:DMA-REQ-L2-005",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 15
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:8fedbf6ae4",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-002",
+      "target": "STAGE3:DMA-REQ-L2-005",
+      "attributes": {
+        "rationale": "UART ile WAV dosyası alma ve oynatma — dosya aktarım protokolü"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:9089e6c6c9",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-003",
+      "target": "STAGE3:DMA-REQ-L2-007",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 17
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:9452d71b0f",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-004",
+      "attributes": {
+        "rationale": "Clock, reset, bellek, debug — tüm bileşenlerin çalışması için zorunlu altyapı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:97e5086a67",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:DMA-DEC-002",
+      "target": "STAGE3:DMA-REQ-L1-001",
+      "attributes": {
+        "detail": "DMA mimarisi, ses verisi throughput gereksiniminden kaynaklanıyor"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:9d34b1513c",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:45a603617b",
+      "target": "STAGE3:OPT:4959a0df00",
+      "attributes": {
+        "rejection_reason": "Metastabilite riski — silicon-validated IP daha güvenilir"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:a32f4f07ec",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:DMA-DEC-001",
+      "target": "STAGE3:DMA-REQ-L1-002",
+      "attributes": {
+        "detail": "PWM seçimi, board'daki SSM2377 amplifier kısıtından kaynaklanıyor"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:a4b97b9061",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:DMA-DEC-003",
+      "target": "STAGE3:OPT:45a603617b",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:a76cea72f1",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-001",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 5
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:a8df16d816",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:DMA-DEC-004",
+      "target": "STAGE3:DMA-REQ-L2-002",
+      "attributes": {
+        "detail": "8-bit çözünürlük, PWM carrier frekansının ses bandı üstünde kalması zorunluluğundan"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:aaac64f309",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-001",
+      "target": "STAGE3:DMA-REQ-L2-003",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 13
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:abd461a91b",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-003",
+      "target": "STAGE3:DMA-REQ-L2-011",
+      "attributes": {
+        "rationale": "Interrupt birleştirme ve routing — çoklu kaynak yönetimi"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:abe1bf9abc",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-004",
+      "attributes": {
+        "rationale": "LMB BRAM — MicroBlaze instruction/data memory"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:ad2bfa4165",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-003",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 30
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:b38aa9bfed",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:AXI-DEC-002",
+      "target": "STAGE3:OPT:fb6e458cfc",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:b5685b8af4",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:DMA-DEC-002",
+      "target": "STAGE3:OPT:6457c07c8e",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:b75a1cbf4b",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-005",
+      "attributes": {
+        "rationale": "AXI sinyal akışı, reset zinciri, clock dağıtımı — sinyal seviyesi anlayış"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:bbb9e86c07",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:fb6e458cfc",
+      "target": "STAGE3:OPT:fd89a4975c",
+      "attributes": {
+        "rejection_reason": "745 satırlık BD script yeni başlayan için anlaşılamaz"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:c129765d67",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-004",
+      "target": "STAGE3:DMA-REQ-L2-010",
+      "attributes": {
+        "rationale": "JTAG debug erişimi — geliştirme desteği"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:c147a99a7e",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-003",
+      "target": "STAGE3:DMA-REQ-L2-011",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 21
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:c64a3dd6cb",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:6457c07c8e",
+      "target": "STAGE3:OPT:a139edb87e",
+      "attributes": {
+        "rejection_reason": "Cache miss ve interrupt gecikmeleri ses kesintilerine neden olur"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:c68b446090",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:a6b1422e35",
+      "target": "STAGE3:OPT:c15a9eee3d",
+      "attributes": {
+        "rejection_reason": "Board'daki analog filtre PWM için optimize — sigma-delta uyumsuz olabilir"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:c825c94603",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-003",
+      "attributes": {
+        "rationale": "Clock, reset, bellek, debug — MicroBlaze için zorunlu altyapı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:c99b5947d8",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:DMA-DEC-005",
+      "target": "STAGE3:DMA-REQ-L2-011",
+      "attributes": {
+        "detail": "Interrupt controller kurulup kullanılmaması, demo basitliği ile gelecek genişleme arasındaki denge"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "E:ca0bc185d1",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-004",
+      "target": "STAGE3:DMA-REQ-L2-008",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 18
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:cc6a196355",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-004",
+      "target": "STAGE3:DMA-REQ-L2-009",
+      "attributes": {
+        "rationale": "Senkronize reset dağıtımı — MIG tabanlı"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:cdb7e05af9",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:AXI-DEC-005",
+      "target": "STAGE3:OPT:46d54a0290",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:cdee9251d5",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-001",
+      "target": "STAGE3:DMA-REQ-L2-004",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 14
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:cf08c4809a",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-001",
+      "attributes": {
+        "rationale": "GPIO ile LED kontrolü — AXI periferik erişiminin temel örneği"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:d07d01fdfc",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:5908e53977",
+      "target": "STAGE3:OPT:8a6f0f5003",
+      "attributes": {
+        "rejection_reason": "24.576 MHz / 65536 = 375 Hz carrier — ses bandında, audible artifacts"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:d6c3503222",
+      "edge_type": "CHOSE",
+      "source": "STAGE3:AXI-DEC-003",
+      "target": "STAGE3:OPT:cc8efd61fc",
+      "attributes": {},
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:d98dc3917a",
+      "edge_type": "MOTIVATED_BY",
+      "source": "STAGE3:AXI-DEC-005",
+      "target": "STAGE3:AXI-REQ-L0-001",
+      "attributes": {
+        "detail": "Nexys Video seçimi, geniş kaynak alanı ve gelecek genişleme potansiyeli"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 47
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:d9c5f3098c",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-002",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 29
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:df35a5af3b",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-004",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 36
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:e7d4059c3f",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L0-001",
+      "target": "STAGE3:AXI-REQ-L1-004",
+      "attributes": {
+        "rationale": "TCL batch mode ile tekrarlanabilir proje oluşturma — CLI-first metodoloji"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 46
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:ef559fb84a",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L0-001",
+      "target": "STAGE3:DMA-REQ-L1-003",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 7
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:f040732aae",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:6457c07c8e",
+      "target": "STAGE3:OPT:b934b9483a",
+      "attributes": {
+        "rejection_reason": "WAV parsing + UART + mod yönetimi RTL'de çok karmaşık (395 satır C vs binlerce satır Verilog)"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:f1c943cf82",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-001",
+      "target": "STAGE3:DMA-REQ-L2-004",
+      "attributes": {
+        "rationale": "Clock domain crossing — veri bütünlüğü için ayrı sorumluluk"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:f664cff6aa",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:AXI-REQ-L1-003",
+      "target": "STAGE3:AXI-REQ-L2-003",
+      "attributes": {
+        "origin": "parent_field"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 35
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:fa4f4c365e",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:c62dca4e88",
+      "target": "STAGE3:OPT:58fb18a231",
+      "attributes": {
+        "rejection_reason": "GUI adımları tekrarlanamaz, CI/CD entegrasyonu imkansız"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:fb2ced5d1c",
+      "edge_type": "ALTERNATIVE_TO",
+      "source": "STAGE3:OPT:cc8efd61fc",
+      "target": "STAGE3:OPT:25638d6289",
+      "attributes": {
+        "rejection_reason": "Block Automation RISC-V desteklemiyor — manuel bağlantı debugging"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 48
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:ff1d01f404",
+      "edge_type": "DECOMPOSES_TO",
+      "source": "STAGE3:DMA-REQ-L1-002",
+      "target": "STAGE3:DMA-REQ-L2-002",
+      "attributes": {
+        "rationale": "PWM üretim donanımı — FIFO'dan gelen veriyi analog ses sinyaline dönüştürür"
+      },
+      "provenance": {
+        "stage": 3,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "yaml_block": 45
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    }
+  ]
+}

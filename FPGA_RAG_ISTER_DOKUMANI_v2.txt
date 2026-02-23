@@ -1,0 +1,2796 @@
+# FPGA RAG v2 — Proje İster ve Metadata Dokümanı (Güncellenmiş)
+## Nexys-A7-100T-DMA-Audio & axi_example Karşılaştırmalı Analiz
+
+**Versiyon:** 2.1
+**Tarih:** 2026-02-23
+**Önceki Versiyon:** 1.0 (2026-02-20)
+**Mimari Referans:** fpga_rag_architecture_v2.md
+**Metodoloji:** Generic FPGA Requirement Extraction Template v1.0
+**Gap Analizi Referans:** FPGA_RAG_ISTER_GAP_ANALIZI.md (20 gap kapatıldı)
+
+### v2.1 Değişiklik Özeti
+- [1.1] Tüm isterlere ve decision'lara `confidence` alanı eklendi
+- [1.2] Tahmin bazlı çıkarımlara `PARSE_UNCERTAIN` etiketi eklendi
+- [1.3] Kaynak satır numaraları tamamlandı
+- [1.4] Her YAML bloğuna `version` ve `last_updated` eklendi
+- [1.5] DECOMPOSES_TO edge'leri formalize edildi
+- [1.6] MOTIVATED_BY edge'leri formalize edildi
+- [1.7] ALTERNATIVE_TO edge'leri formalize edildi
+- [2.2] Coverage Gap / Orphan Component analizi eklendi
+- [2.3] Component port/parametre bilgileri zenginleştirildi
+- [3.1] Çapraz referans edge'lerine confidence eklendi
+- [3.2] Cross-project pattern eşleştirmesi tamamlandı
+- [5.1] Sorgu örnekleri eklendi
+- [6.1] ID çakışması çözüldü (proje prefixi: DMA-, AXI-)
+- [6.2] ISSUE severity skalası tutarlı hale getirildi (5 seviye: critical/high/medium/low/info)
+- [6.3] PROJECT node'ları eklendi
+- [6.4] SOURCE_DOC node'ları eklendi
+- [EK-1] Signal Path isterleri eklendi (her iki proje)
+- [EK-2] Evidence bağlam boşlukları dolduruldu (tam dosya yolları)
+- [EK-3] Tüm isterlere seçilme motivasyonu eklendi
+- [EK-4] "Neden seçildi" açıklamaları detaylandırıldı
+- [2.1.1] SOURCE_DOC tam yolları mevcut workspace'e (`/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/...`) normalize edildi
+- [2.1.2] SOURCE_DOC satır sayıları gerçek dosya satırlarıyla senkronize edildi
+- [2.1.3] PROJECT-A `fpga_part` alanı gözlenen konfigürasyona güncellendi (`xc7a50ticsg324-1L`) ve 100T beklentisi ISSUE ile korunmaya devam etti
+- [2.1.4] `DMA-REQ-L2-003` için `PARSE_UNCERTAIN` kuralına uygun olarak confidence `HIGH -> MEDIUM` düzeltildi
+- [2.1.5] `AXI-REQ-L2-002` için repository'de kaynak dosya bulunamadığı doğrulandı; durum `active -> planned`, confidence `HIGH -> MEDIUM` olarak güncellendi
+
+---
+
+## İÇİNDEKİLER
+
+1. [Generic İster Çıkarma Kuralları](#1-generic-ister-çıkarma-kuralları)
+2. [PROJECT Node Tanımları](#2-project-node-tanımları)
+3. [SOURCE_DOC Node Tanımları](#3-source_doc-node-tanımları)
+4. [PROJE A: Nexys-A7-100T-DMA-Audio](#4-proje-a-nexys-a7-100t-dma-audio)
+   - 4.1 Proje Özeti
+   - 4.2 İster Ağacı (L0 → L2) — Signal Path dahil
+   - 4.3 Decision Kayıtları
+   - 4.4 Metadata (Component, Constraint, Evidence, Issue, Pattern)
+5. [PROJE B: axi_example](#5-proje-b-axi_example)
+   - 5.1 Proje Özeti
+   - 5.2 İster Ağacı (L0 → L2) — Signal Path dahil
+   - 5.3 Decision Kayıtları
+   - 5.4 Metadata (Component, Constraint, Evidence, Issue, Pattern)
+6. [Edge Tanımları (DECOMPOSES_TO, MOTIVATED_BY, ALTERNATIVE_TO)](#6-edge-tanımları)
+7. [Karşılaştırma ve Fark Analizi](#7-karşılaştırma-ve-fark-analizi)
+8. [Coverage Gap / Orphan Analizi](#8-coverage-gap-orphan-analizi)
+9. [Sorgu Örnekleri ve Yanıt Şablonları](#9-sorgu-örnekleri)
+10. [Generic Şablon Doğrulama](#10-generic-şablon-doğrulama)
+
+---
+
+# 1. Generic İster Çıkarma Kuralları
+
+Bu doküman boyunca her iki projeye de **aynı kurallar** uygulanmıştır.
+
+## 1.1 L1 Kırınım Eksenleri (Sabit — Her Projede Aynı)
+
+| Eksen | Tetikleyici | L1 İster Üretir mi? |
+|-------|-------------|----------------------|
+| **Veri Yolu (Data Path)** | AXI DMA, FIFO, AXI Interconnect (2+ slave), MIG/DDR varsa | Evet |
+| **Sinyal Yolu (Signal Path)** | Clock wizard, reset controller, interrupt controller, status/handshake sinyalleri varsa | Evet |
+| **İşleme (Processing)** | MicroBlaze, Zynq PS, custom RTL hesaplama modülü varsa | Evet |
+| **I/O Periferikleri** | GPIO, UART, SPI, PWM, HDMI vb. periferik varsa | Evet |
+| **Altyapı (Infrastructure)** | HER ZAMAN — clock, reset, BRAM, debug | Evet |
+| **Otomasyon/Build** | TCL script, Makefile, CI/CD pipeline varsa | Evet (non-functional) |
+
+> **NOT (v2.0):** Signal Path ekseni v2.0'da eklendi. Clock dağıtımı, reset zinciri, interrupt routing ve handshake sinyalleri bu eksen altında ele alınır. Altyapı (Infrastructure) ekseni fiziksel bileşenleri (IP instance'ları), Signal Path ise bu bileşenler arasındaki sinyal bağlantılarını ve protokollerini kapsar.
+
+## 1.2 L2 Kuralları
+
+- Her **custom RTL modülü** → 1 L2 ister
+- Her **IP core instance** → 1 L2 ister (AXI Interconnect ve utility buffer'lar hariç)
+- Her **yazılım uygulaması** (SDK/Vitis main) → 1 L2 ister
+- Clock Wizard, Reset Controller, BRAM, MDM → HER ZAMAN L2 ister
+
+## 1.3 Priority Tanımları
+
+| Priority | Anlamı | Belirleme Kriteri |
+|----------|--------|-------------------|
+| **must** | Proje bu olmadan çalışmaz | Kritik veri yolu, ana işlev, altyapı |
+| **should** | Önemli ama proje temel seviyede onsuz çalışabilir | Yardımcı özellik, ek mod, gelişmiş fonksiyon |
+| **could** | Olsa iyi olur, yoksa da olur | Test artefaktı, debug kolaylığı, ek UI |
+
+## 1.4 Status Tanımları
+
+| Status | Anlamı |
+|--------|--------|
+| **active** | Tasarımda mevcut (çalışsın veya çalışmasın) |
+| **planned** | Henüz implement edilmemiş |
+| **deprecated** | Eski, kaldırılacak |
+
+> **NOT:** `broken` kullanılmaz. Çalışmayan özellik → `status: active` + ilgili ISSUE node referansı.
+
+## 1.5 Confidence Modeli (v2.0)
+
+| Confidence | Anlamı | Kaynak |
+|------------|--------|--------|
+| **HIGH** | Mühendis kaynak kodundan doğrudan çıkarılmış | Kaynak kod, XDC, TCL, README |
+| **MEDIUM** | Semantik/yapısal çıkarım veya tahmin bazlı | LLM yorumu, dolaylı kanıt |
+
+> `PARSE_UNCERTAIN` etiketi: LLM'in emin olamadığı çıkarımlar bu etiketle işaretlenir. Confidence otomatik olarak MEDIUM olur.
+
+## 1.6 ISSUE Severity Skalası (v2.0 — Tutarlı)
+
+| Severity | Anlamı | Kriter |
+|----------|--------|--------|
+| **critical** | Sistem çalışmaz veya yanlış çalışır | Fonksiyonel hata, konfigürasyon çelişkisi |
+| **high** | Önemli özellik etkilenir | Bir modül devre dışı, performans sorunu |
+| **medium** | Sınırlı etki | Kısıtlama, kalite kaybı |
+| **low** | Minimal etki | Kullanım kısıtı, gelecek iyileştirme |
+| **info** | Bilgi amaçlı | Eksik test, dokümantasyon notu |
+
+---
+
+# 2. PROJECT Node Tanımları
+
+## PROJECT-A: DMA-Audio
+
+```yaml
+node_type: PROJECT
+project_id: PROJECT-A
+name: "Nexys-A7-100T-DMA-Audio"
+description: "Digilent Nexys A7-100T üzerinde DMA tabanlı ses akışı demo uygulaması"
+board: "Digilent Nexys A7-100T"
+fpga_part: "xc7a50ticsg324-1L"
+expected_board_part: "xc7a100tcsg324-1"
+tool: "Vivado 2018.2 + Xilinx SDK"
+developer: "Digilent"
+language: ["Verilog", "C"]
+project_type: "application"
+root_requirement: "DMA-REQ-L0-001"
+version: 1
+last_updated: 2026-02-23
+confidence: HIGH
+```
+
+## PROJECT-B: axi_example
+
+```yaml
+node_type: PROJECT
+project_id: PROJECT-B
+name: "axi_example"
+description: "AXI bus mimarisi eğitim / validasyon test suite"
+board: "Digilent Nexys Video"
+fpga_part: "xc7a200tsbg484-1"
+tool: "Vivado 2025.1"
+developer: "In-house"
+language: ["Verilog"]
+project_type: "educational"
+root_requirement: "AXI-REQ-L0-001"
+version: 1
+last_updated: 2026-02-23
+confidence: HIGH
+```
+
+---
+
+# 3. SOURCE_DOC Node Tanımları
+
+## 3.1 DMA-Audio Source Documents
+
+```yaml
+source_docs:
+  - doc_id: SDOC-A-001
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/axis2fifo.v"
+    type: hdl_source
+    language: Verilog
+    lines: 36
+    description: "AXI-Stream → FIFO dönüştürücü RTL modülü"
+
+  - doc_id: SDOC-A-002
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/fifo2audpwm.v"
+    type: hdl_source
+    language: Verilog
+    lines: 38
+    description: "FIFO → PWM ses çıkışı dönüştürücü RTL modülü"
+
+  - doc_id: SDOC-A-003
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/tone_generator.v"
+    type: hdl_source
+    language: Verilog
+    lines: 73
+    description: "Phase accumulator tabanlı donanım ton üreteci"
+
+  - doc_id: SDOC-A-004
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/sdk/appsrc/helloworld.c"
+    type: sw_source
+    language: C
+    lines: 395
+    description: "MicroBlaze SDK uygulaması — DMA kontrolü, WAV parser, demo modları"
+
+  - doc_id: SDOC-A-005
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/bd/design_1.tcl"
+    type: tcl_script
+    lines: 744
+    description: "Vivado Block Design recreation script"
+
+  - doc_id: SDOC-A-006
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/constraints/Nexys-A7-100T-Master.xdc"
+    type: constraint
+    lines: 211
+    description: "Pin ve timing constraint dosyası"
+
+  - doc_id: SDOC-A-007
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/project_info.tcl"
+    type: tcl_script
+    description: "Proje konfigürasyon dosyası — part tanımı"
+
+  - doc_id: SDOC-A-008
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/README.md"
+    type: documentation
+    description: "Proje README — bilinen sorunlar ve kullanım talimatları"
+
+  - doc_id: SDOC-A-009
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/repo/local/if/pwm_audio/pwm_audio_rtl.xml"
+    type: ip_definition
+    description: "Custom PWM audio bus interface tanımı"
+
+## 3.2 axi_example Source Documents
+
+  - doc_id: SDOC-B-001
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/vivado_axi_simple/axi_gpio_wrapper.v"
+    type: hdl_source
+    language: Verilog
+    lines: 37
+    description: "Standalone AXI GPIO wrapper — AXI tie-off pattern"
+
+  - doc_id: SDOC-B-002
+    path: "[MISSING_IN_WORKSPACE] /Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/simple_working/simple_project.srcs/sources_1/new/simple_top.v"
+    type: hdl_source_missing
+    language: Verilog
+    lines: 0
+    availability: "missing_in_workspace"
+    description: "4-bit counter test modülü (repo'da doğrulanamadı, PARSE_UNCERTAIN)"
+
+  - doc_id: SDOC-B-003
+    path: "[MISSING_IN_WORKSPACE] /Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/axi_example_build/axi_example_build.srcs/sources_1/bd/axi_gpio_bd/axi_gpio_bd.bd"
+    type: block_design_missing
+    availability: "missing_in_workspace"
+    description: "MicroBlaze + GPIO block design (repo'da doğrulanamadı, PARSE_UNCERTAIN)"
+
+  - doc_id: SDOC-B-004
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/vivado_axi_simple/nexys_video.xdc"
+    type: constraint
+    lines: 29
+    description: "Nexys Video pin constraint dosyası"
+
+  - doc_id: SDOC-B-005
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/create_axi_simple_gpio.tcl"
+    type: tcl_script
+    lines: 132
+    description: "Standalone GPIO proje oluşturma scripti"
+
+  - doc_id: SDOC-B-006
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/create_minimal_microblaze.tcl"
+    type: tcl_script
+    lines: 161
+    description: "Minimal MicroBlaze BD oluşturma scripti"
+
+  - doc_id: SDOC-B-007
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/add_axi_gpio.tcl"
+    type: tcl_script
+    lines: 156
+    description: "Mevcut projeye AXI GPIO ekleme scripti"
+
+  - doc_id: SDOC-B-008
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/run_synthesis.tcl"
+    type: tcl_script
+    lines: 81
+    description: "Sentez çalıştırma ve rapor üretme scripti"
+
+  - doc_id: SDOC-B-009
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/SYNTHESIS_RESULTS.md"
+    type: documentation
+    description: "Sentez sonuçları raporu — timing ve kaynak kullanımı"
+
+  - doc_id: SDOC-B-010
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/utilization_summary.txt"
+    type: report
+    description: "Detaylı kaynak kullanım raporu"
+
+  - doc_id: SDOC-B-011
+    path: "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/README.md"
+    type: documentation
+    description: "Proje README — Türkçe/İngilizce dokümantasyon"
+```
+
+---
+
+# 4. PROJE A: Nexys-A7-100T-DMA-Audio
+
+## 4.1 Proje Özeti
+
+| Alan | Değer |
+|------|-------|
+| **Proje Adı** | Nexys-A7-100T-DMA-Audio |
+| **Proje Tipi** | Uygulama (ses akışı demosu) |
+| **Board** | Digilent Nexys A7-100T |
+| **FPGA** | xc7a100tcsg324-1 (XDC'deki board) / xc7a50ticsg324-1L (project_info.tcl — **TUTARSIZLIK**, ISSUE-A-001) |
+| **Vivado** | 2018.2 |
+| **Dil** | Verilog (HDL), C (SDK) |
+| **Geliştirici** | Digilent |
+| **Kaynak** | GitHub (Digilent/Nexys-A7-100T-DMA-Audio) |
+
+---
+
+## 4.2 İster Ağacı
+
+### DMA-REQ-L0-001: Sistem Gereksinimleri
+
+```yaml
+req_id: DMA-REQ-L0-001
+level: L0
+type: functional
+priority: must
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "Nexys A7-100T üzerinde DMA tabanlı ses akışı gerçekleştirilir"
+  - "DDR2 RAM üzerinden ses verisi PWM çıkışa aktarılır"
+  - "Kullanıcı butonlarla mod seçimi yapabilir"
+  - "UART üzerinden WAV dosyası alınıp oynatılabilir"
+  - "Seri terminal (230400 baud) üzerinden etkileşim sağlanır"
+
+constraints:
+  - type: board
+    spec: "Digilent Nexys A7-100T"
+  - type: tool
+    spec: "Vivado 2018.2 + Xilinx SDK"
+  - type: interface
+    spec: "PWM Audio çıkış (mono, 8-bit, 96 kHz)"
+  - type: connection
+    spec: "MicroUSB ile bilgisayara bağlantı"
+```
+
+**Neden bu gereksinim var:**
+Proje, Digilent'in Nexys A7 board'u için referans demo uygulamasıdır. DMA mimarisini kullanarak FPGA üzerinde gerçek zamanlı ses işlemeyi gösterir. Kullanıcıların donanım üzerinde ses akışının nasıl çalıştığını anlaması hedeflenir. audiocheck.net test dosyalarıyla doğrulanmıştır (kaynak: `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/README.md`).
+
+**Seçilme motivasyonu:** DMA tabanlı ses akışı, FPGA'nın donanımsal veri taşıma kapasitesini gösteren ideal bir demo senaryosudur. Ses verisi sürekli ve gerçek zamanlı akış gerektirir — bu, DMA'nın CPU'ya göre üstünlüğünü somut olarak gösterir. Board üzerinde PWM audio amplifier (SSM2377) bulunması, ek donanım gerektirmeden çalışan bir ses demosu yapılabilmesini sağlar.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **Donanım uygunluğu:** Nexys A7-100T, DDR2 RAM (büyük ses dosyaları için), PWM audio çıkış (SSM2377 amplifier), MicroUSB UART (dosya aktarımı) ve butonlar (mod seçimi) ile ses demo uygulaması için ideal bir platformdur. Tüm gerekli I/O'lar board üzerinde mevcuttur.
+2. **Eğitim değeri:** DMA, clock domain crossing, AXI-Stream protokolü ve MicroBlaze entegrasyonu gibi ileri FPGA kavramlarını tek bir uygulamada birleştirir.
+3. **Referans proje geleneği:** Digilent, her board için referans demo projeleri yayınlar. Bu proje, DMA kullanımını gösteren resmi referanstır.
+
+**Priority gerekçesi:** `must` — Projenin varlık sebebi. Bu olmadan proje anlamsız.
+
+---
+
+### DMA-REQ-L1-001: Veri Yolu Alt Sistemi (Data Path)
+
+```yaml
+req_id: DMA-REQ-L1-001
+level: L1
+type: functional
+priority: must
+parent: DMA-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "AXI DMA MM2S kanalı ile DDR2'den ses verisi stream edilir"
+  - "AXI DMA S2MM kanalı ile ses verisi DDR2'ye kaydedilir"
+  - "DMA ↔ DDR2 veri yolu AXI Interconnect ile yönetilir"
+  - "Dual-clock FIFO ile DMA clock → audio clock geçişi sağlanır"
+
+constraints:
+  - type: ip
+    spec: "Xilinx AXI DMA v7.1, simple mode (SG yok), DRE aktif"
+  - type: bandwidth
+    spec: "256-byte burst, 27-bit address width"
+  - type: memory
+    spec: "MIG 7-Series v4.1, DDR2, 128 MB (0x80000000 base)"
+  - type: interconnect
+    spec: "AXI Interconnect, 4 slave / 1 master (DMA MM2S, DMA S2MM, MB DC, MB IC → MIG)"
+```
+
+**Neden bu gereksinim var:**
+Ses verisinin bellek ile FPGA fabric arasında yüksek bant genişliğinde aktarılması gerekir. CPU (MicroBlaze) bu bant genişliğini yazılımla sağlayamaz — DMA donanımsal olarak veriyi taşır. DDR2 kullanılmasının sebebi, WAV dosyalarının (16 MB'a kadar — kaynak: `helloworld.c:302`, `max_file_size = 0x7FFFFF`) onboard BRAM'e sığmamasıdır. FIFO, DMA system clock (~81 MHz, MIG ui_clk) ile audio PWM clock'u (24.576 MHz) arasındaki domain farkını köprüler.
+
+**Seçilme motivasyonu:** Ses akışı, sürekli ve kesintisiz veri transferi gerektirir. CPU-driven memcpy ile bu sağlanamaz çünkü yazılım döngüleri deterministik değildir (cache miss, interrupt latency). DMA, donanım seviyesinde deterministik veri aktarımı sağlayarak ses kesintilerini (audio glitch) önler.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **Bant genişliği gereksinimi:** 96 kHz × 8-bit = 768 kbps minimum throughput gerekli. DMA, burst mode ile DDR2'den FIFO'ya kesintisiz veri pompalayabilir.
+2. **CPU offload:** MicroBlaze, DMA transferi sürerken WAV header parsing, buton polling ve UART dinleme gibi kontrol görevlerini paralel yapabilir.
+3. **DDR2 zorunluluğu:** WAV dosyaları 8 MB'a kadar büyük olabilir. Board'daki LMB BRAM sadece 64 KB — ses verisi sığmaz.
+4. **Clock domain crossing:** DMA fabric clock'u (~81 MHz) ile PWM audio clock'u (24.576 MHz) farklı. Dual-clock FIFO bu farkı güvenli şekilde köprüler.
+
+**Priority gerekçesi:** `must` — DMA olmadan ses verisi bellekten çıkışa aktarılamaz. Projenin adı zaten "DMA-Audio".
+
+---
+
+### DMA-REQ-L1-002: I/O Periferikleri Alt Sistemi
+
+```yaml
+req_id: DMA-REQ-L1-002
+level: L1
+type: functional
+priority: must
+parent: DMA-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "PWM sinyali ile ses çıkışı üretilir (96 kHz sample rate)"
+  - "5 buton ile mod seçimi yapılabilir"
+  - "16 DIP switch okunabilir"
+  - "16 LED + 3 RGB LED kontrol edilebilir"
+  - "UART ile bilgisayardan WAV dosyası alınabilir"
+
+constraints:
+  - type: pin
+    spec: "PWM → A11 (aud_pwm), Enable → D12 (aud_sd), LVCMOS33"
+  - type: interface
+    spec: "PWM Audio: Digilent custom bus (pwm + en + gain)"
+  - type: uart
+    spec: "AXI UARTLite v2.0, 230400 baud"
+  - type: gpio
+    spec: "AXI GPIO dual channel × 2 instance"
+```
+
+**Neden bu gereksinim var:**
+Kullanıcı arayüzü ve ses çıkışı projenin dış dünyayla etkileşim noktalarıdır. PWM seçildi çünkü Nexys A7-100T board'unda analog DAC yok, sadece onboard PWM audio amplifier (Analog Devices SSM2377) var (kaynak: board şeması). UART seçildi çünkü board'un MicroUSB bağlantısı zaten UART-to-USB çevirici içeriyor ve WAV dosyası aktarımı için en pratik yol budur.
+
+**Seçilme motivasyonu:** Demo uygulamasının kullanıcıyla etkileşime girmesi zorunludur. Ses çıkışı projenin ana fonksiyonu, butonlar mod seçimi için, LED'ler durum göstergesi için gereklidir. Board'daki mevcut I/O kaynakları (PWM amplifier, butonlar, switch'ler, LED'ler, UART) ek donanım gerektirmeden tam bir kullanıcı deneyimi sağlar.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **PWM çıkış:** Board şemasında FPGA pin (A11) → RC low-pass filter → SSM2377 amplifier → 3.5mm jack yolu PWM için optimize edilmiş. Board tasarımcısı bu kullanımı öngörmüş.
+2. **5 buton = 5 mod:** Demo 5 modlu (pause, HW tone, SW tone, recv WAV, play WAV). Her buton bir moda atanarak basit ve sezgisel kontrol sağlanır.
+3. **UART dosya aktarımı:** SD kart veya Ethernet bu tasarımda kullanılmıyor. UART, board üzerindeki MicroUSB ile doğrudan çalışır — ek donanım gerekmez.
+
+**Priority gerekçesi:** `must` — Ses çıkışı ve kullanıcı etkileşimi olmazsa demo çalışmaz.
+
+---
+
+### DMA-REQ-L1-003: İşleme Alt Sistemi (Processing)
+
+```yaml
+req_id: DMA-REQ-L1-003
+level: L1
+type: functional
+priority: must
+parent: DMA-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "MicroBlaze işlemci DMA transferlerini başlatır ve izler"
+  - "Yazılımda 5 demo modu yönetilir (pause, HW tone, SW tone, recv WAV, play WAV)"
+  - "WAV dosyası header parse edilir (RIFF, fmt, data chunk)"
+  - "16-bit audio → 8-bit dönüşümü yapılır"
+  - "Yazılım ile 261 Hz sinüs tonu üretilebilir"
+
+constraints:
+  - type: processor
+    spec: "MicroBlaze v10.0, 32-bit, I-cache + D-cache"
+  - type: memory
+    spec: "64 KB LMB BRAM (local) + DDR2 (external)"
+  - type: interrupt
+    spec: "AXI INTC v4.1, xlconcat ile DMA + GPIO + UART interrupt birleştirme"
+```
+
+**Neden bu gereksinim var:**
+DMA kontrolü, WAV header parsing ve mod yönetimi gibi kontrol akışı görevleri yazılımda çok daha kolay implement edilir. MicroBlaze seçildi çünkü:
+1. Artix-7'de ARM çekirdeği yok (Zynq değil) — kaynak: FPGA part xc7a100t ailesi Artix-7 pure FPGA
+2. Xilinx SDK ile doğrudan C programlama mümkün
+3. AXI DMA driver'ları hazır (xaxidma.h) — kaynak: `helloworld.c:19` include
+4. Vivado Block Automation ile hızlı entegrasyon
+
+Cache aktif çünkü DDR2 üzerinden ses verisi okuyan yazılım döngüleri (`dma_sw_tone_gen` — kaynak: `helloworld.c:353-380`) yeterli performansa ihtiyaç duyar.
+
+**Seçilme motivasyonu:** Ses akışı uygulamasında hem gerçek zamanlı donanım kontrolü (DMA başlatma/durdurma) hem de karmaşık protokol işleme (WAV parsing) gerekir. MicroBlaze, bu iki ihtiyacı tek çipte birleştirir — ayrı bir MCU board'u gerekmez.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **Yazılım esnekliği:** WAV header parsing (RIFF chunk navigation), mod state machine, UART protokolü — bunları Verilog FSM ile yazmak binlerce satır kod gerektirir. C'de 395 satır (kaynak: `helloworld.c`).
+2. **Driver ekosistemi:** Xilinx SDK, AXI DMA (xaxidma.h), GPIO (xgpio.h), UARTLite (xuartlite.h) driver'larını BSP olarak sağlar.
+3. **Debug kolaylığı:** SDK + MDM ile breakpoint, printf debug mümkün. Pure RTL'de bu seviye debugging çok zor.
+4. **Artix-7 kısıtı:** FPGA ailesi ARM hard core içermiyor. Soft processor zorunlu.
+
+**Priority gerekçesi:** `must` — Yazılım kontrolü olmadan DMA başlatılamaz, WAV parse edilemez.
+
+---
+
+### DMA-REQ-L1-004: Altyapı Alt Sistemi (Infrastructure)
+
+```yaml
+req_id: DMA-REQ-L1-004
+level: L1
+type: functional
+priority: must
+parent: DMA-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "100 MHz harici clock'tan 140.625 MHz (sistem) ve 24.576 MHz (audio) clock üretilir"
+  - "MIG DDR2 kontrolcüsü başlatılır, ui_clk (~81 MHz) tüm sistemi besler"
+  - "Reset sinyalleri senkronize dağıtılır"
+  - "Debug modülü (MDM) JTAG erişimi sağlar"
+  - "LMB BRAM instruction ve data erişimi sağlar"
+
+constraints:
+  - type: clock
+    spec: "clk_wiz_0: 100 MHz → Clk_Out1 (140.625 MHz, MIG sys_clk_i), Clk_Out2 (24.576 MHz, audio)"
+  - type: clock
+    spec: "MIG ui_clk (~81 MHz) → MicroBlaze, AXI fabric, DMA, peripherals"
+  - type: reset
+    spec: "rst_mig_7series_0_81M (proc_sys_reset v5.0), ext_reset ← MIG ui_clk_sync_rst"
+  - type: debug
+    spec: "MDM v3.2, JTAG debug"
+  - type: memory
+    spec: "LMB BRAM 64 KB (I+D), MIG DDR2 128 MB"
+```
+
+**Neden bu gereksinim var:**
+Her FPGA tasarımı clock, reset ve bellek altyapısına ihtiyaç duyar. Bu projede iki farklı clock domain var (sistem ~81 MHz ve audio 24.576 MHz) çünkü:
+- DDR2 MIG kendi clock'unu üretir (ui_clk) ve tüm AXI fabric buna bağlıdır (kaynak: `design_1.tcl` MIG konfigürasyonu)
+- PWM audio clock'u tam 96 kHz × 256 = 24.576 MHz olmalıdır (kaynak: `fifo2audpwm.v` — 256-level counter)
+- Bu iki domain'in farklı olması dual-clock FIFO gerektirmektedir
+
+140.625 MHz, MIG'in DDR2 PHY'si için gerekli reference clock'tur. 24.576 MHz, standart audio clock ailesine (48 kHz × 512) aittir.
+
+**Seçilme motivasyonu:** Altyapı bileşenleri (clock, reset, bellek, debug) herhangi bir FPGA SoC tasarımının iskeletidir. Bu bileşenler olmadan ne MicroBlaze başlatılabilir ne de DMA çalıştırılabilir. Özellikle bu projede 3 farklı clock domain (100 MHz giriş, ~81 MHz fabric, 24.576 MHz audio) olması, altyapının karmaşıklığını artırmaktadır.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **Çoklu clock domain:** DDR2 MIG, kendi ui_clk'ını üretir (~81 MHz). Audio PWM tam 24.576 MHz gerektirir. Board'dan 100 MHz gelir. Bu üç frekans farklı kaynaklardan türetilmelidir.
+2. **MIG tabanlı reset:** DDR2 kalibrasyonu tamamlanmadan sistem stabil çalışamaz. Reset, MIG'in init_calib_complete sinyaline bağlıdır.
+3. **BRAM boyutu:** 64 KB LMB BRAM, MicroBlaze'in code + stack + heap için minimum ihtiyacıdır. DDR2, ses verisi için kullanılır.
+4. **Debug zorunluluğu:** MDM olmadan JTAG ile program yüklenemez ve breakpoint konulamaz.
+
+**Priority gerekçesi:** `must` — Altyapı olmadan hiçbir bileşen çalışamaz.
+
+---
+
+### DMA-REQ-L1-005: Otomasyon/Build Alt Sistemi
+
+```yaml
+req_id: DMA-REQ-L1-005
+level: L1
+type: non-functional
+priority: could
+parent: DMA-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "Digilent vivado-scripts submodule ile proje yeniden oluşturulabilir"
+  - "design_1.tcl script'i block design'ı tam olarak yeniden üretir"
+  - "project_info.tcl ile proje ayarları otomatik yapılandırılır"
+
+constraints:
+  - type: tool
+    spec: "digilent-vivado-scripts submodule"
+  - type: script
+    spec: "design_1.tcl (BD recreation), project_info.tcl (proje config)"
+```
+
+**Neden bu gereksinim var:**
+Digilent'in standart proje dağıtım formatı submodule + TCL script kullanır. Bu sayede Vivado projesi versiyon kontrolünde (.xpr dosyaları commit edilmez) ve farklı ortamlarda yeniden oluşturulabilir. Ancak bu projede submodule boş (init edilmemiş) olduğu için tam otomasyon çalışmıyor (kaynak: `.gitmodules` dosyası — ISSUE-A-008).
+
+**Seçilme motivasyonu:** Digilent'in tüm referans projelerinde kullanılan standart dağıtım formatıdır. Vivado XPR dosyaları binary ve versiyon kontrolüne uygun değildir — TCL script ile BD recreation, projenin farklı Vivado sürümlerinde yeniden oluşturulmasını mümkün kılar.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **Versiyon kontrolü:** .xpr dosyaları büyük ve binary — git'te izlenmesi verimsiz. TCL script metin tabanlı ve diff edilebilir.
+2. **Reproducibility:** Farklı bilgisayarlarda aynı design_1.tcl çalıştırılarak aynı BD elde edilir.
+3. **Digilent standardı:** Tüm Digilent referans projeleri bu formatı kullanır — tutarlılık.
+
+**Priority gerekçesi:** `could` — Proje zaten hazır XPR olarak dağıtılıyor, otomasyon bonus.
+
+---
+
+### DMA-REQ-L1-006: Sinyal Yolu Alt Sistemi (Signal Path) [v2.0 YENİ]
+
+```yaml
+req_id: DMA-REQ-L1-006
+level: L1
+type: functional
+priority: must
+parent: DMA-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "3 clock domain (100 MHz giriş, ~81 MHz MIG fabric, 24.576 MHz audio) arası geçişler güvenli yapılır"
+  - "Reset zinciri: MIG ui_clk_sync_rst → proc_sys_reset → peripheral_aresetn/interconnect_aresetn"
+  - "AXI-Stream handshake: tvalid/tready protokolü axis2fifo ve tone_generator'da doğru uygulanır"
+  - "FIFO status sinyalleri (full/empty) backpressure ve flow control sağlar"
+  - "Interrupt sinyalleri: DMA + GPIO + UART → xlconcat → INTC → MicroBlaze INTERRUPT"
+  - "PWM enable sinyali (aud_en) FIFO durumuna göre kontrol edilir"
+
+constraints:
+  - type: protocol
+    spec: "AXI-Stream: tvalid, tready, tlast, tkeep handshake"
+  - type: cdc
+    spec: "Dual-clock FIFO gray-code pointer senkronizasyonu"
+  - type: reset
+    spec: "Senkronize reset dağıtımı — proc_sys_reset hold time"
+  - type: interrupt
+    spec: "xlconcat_0: DMA MM2S + S2MM, xlconcat_1: GPIO_IN + GPIO_OUT + UART"
+```
+
+**Neden bu gereksinim var:**
+Veri yolu (Data Path) verinin nereden nereye aktığını tanımlar. Sinyal yolu (Signal Path) ise bu veri akışını kontrol eden, senkronize eden ve yöneten sinyalleri tanımlar. Bu projede sinyal yolu kritiktir çünkü:
+
+1. **Clock Domain Crossing (CDC):** 3 farklı clock domain var. CDC hataları, metastabilite ve veri bozulmasına neden olur. FIFO'nun gray-code pointer senkronizasyonu bu riski yönetir (kaynak: `design_1.tcl` — fifo_generator_0 independent clocks mode konfigürasyonu).
+
+2. **AXI-Stream Handshake:** `axis2fifo.v` modülünde `axis_tready <= ~fifo_full` bağlantısı (kaynak: `axis2fifo.v:33`) backpressure mekanizmasını sağlar. FIFO dolduğunda DMA durur — veri kaybı olmaz.
+
+3. **FIFO Flow Control:** `fifo2audpwm.v` modülünde `aud_en` sinyali FIFO boş olduğunda 0'a çekilir (kaynak: `fifo2audpwm.v:23-26`) — sessizlik üretilir, garbage çıkış verilmez.
+
+4. **Reset Sıralaması:** MIG DDR2 kalibrasyonu tamamlanmadan reset bırakılırsa MicroBlaze undefined state'de başlar. Reset zinciri bu sıralamayı garanti eder.
+
+5. **Interrupt Routing:** 5 interrupt kaynağı (DMA MM2S, DMA S2MM, GPIO_IN, GPIO_OUT, UART) xlconcat ile birleştirilip INTC üzerinden MicroBlaze'e iletilir (kaynak: `design_1.tcl` xlconcat konfigürasyonu). Ancak yazılımda interrupt kullanılmıyor (ISSUE-A-006).
+
+**Seçilme motivasyonu:** Donanım tasarımında sinyal bütünlüğü ve zamanlama, veri doğruluğu kadar kritiktir. Yanlış bir handshake, eksik bir backpressure veya hatalı bir CDC, veri kaybına veya sistem çökmesine neden olabilir. Bu isterler, sinyal seviyesindeki doğruluk gereksinimlerini açıkça belgeleyerek doğrulama ve debug süreçlerini destekler.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **CDC güvenliği:** async FIFO olmadan iki clock domain arası veri geçişi metastabilite riski taşır. Gray-code pointer'lar bu riski eliminate eder.
+2. **Backpressure mekanizması:** DMA burst hızı > PWM tüketim hızı. FIFO dolduğunda DMA'nın durması gerekir yoksa veri kaybı olur.
+3. **Reset güvenilirliği:** Power-on sırasında tüm bileşenlerin belirli sırada başlatılması gerekir. proc_sys_reset bu sıralamayı sağlar.
+4. **Interrupt altyapısı:** 5 bağımsız interrupt kaynağının tek MicroBlaze interrupt portuna yönlendirilmesi gerekir.
+
+**Priority gerekçesi:** `must` — Sinyal yolu hataları veri bozulmasına ve sistem kararsızlığına neden olur.
+
+---
+
+### L2 İsterleri
+
+#### DMA-REQ-L2-001: AXI-Stream → FIFO Dönüştürücü (axis2fifo)
+
+```yaml
+req_id: DMA-REQ-L2-001
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-001
+status: active
+implementing_component: axis2fifo_0
+source_file: src/hdl/axis2fifo.v
+source_doc: SDOC-A-001
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "32-bit AXI-Stream verisinin alt 16 biti FIFO'ya yazılır"
+  - "FIFO full durumunda axis_tready deassert edilir (backpressure)"
+  - "axis_tvalid & axis_tready koşulunda FIFO write enable aktif olur"
+
+constraints:
+  - type: data_width
+    spec: "AXI-Stream 32-bit → FIFO 16-bit (üst 16 bit atılır)"
+  - type: interface
+    spec: "Xilinx AXI-Stream slave + Xilinx FIFO write master"
+  - type: clock_domain
+    spec: "MIG ui_clk (~81 MHz)"
+```
+
+**Neden bu modül var:**
+AXI DMA'nın MM2S kanalı AXI-Stream protokolü ile veri çıkarır. Ancak FIFO Generator IP'si native FIFO arayüzü (wr_data, wr_en, full) kullanır. Bu modül iki protokol arasında köprü görevi görür. 32-bit'in alt 16-bit'i alınır çünkü ses verisi 16-bit signed format (kaynak: `axis2fifo.v:35` — `fifo_wr_data = axis_tdata[15:0]`). Downstream PWM modülü 8-bit ile çalışır — 16→8 bit dönüşüm C kodunda yapılır (kaynak: `helloworld.c:287`).
+
+**Seçilme motivasyonu:** AXI-Stream ve native FIFO arasındaki protokol uyumsuzluğu donanım seviyesinde çözülmelidir. Yazılımda bu dönüşümü yapmak, her DMA transferinde CPU müdahalesi gerektirir ve real-time performansı bozar.
+
+**Neden bu modül seçildi (detaylı):**
+1. **Protokol köprüsü zorunluluğu:** AXI-Stream (valid/ready/data/last) ≠ FIFO (wr_en/wr_data/full). Doğrudan bağlantı yapılamaz.
+2. **Backpressure mekanizması:** `axis_tready = ~fifo_full` (kaynak: `axis2fifo.v:33`) ile FIFO dolduğunda DMA otomatik durur.
+3. **Minimum gecikme:** 37 satırlık combinational logic — pipeline veya latency eklemez.
+4. **Bit genişliği adaptasyonu:** DMA 32-bit çıkış üretir, ses verisi 16-bit. Alt 16-bit seçimi donanımda yapılarak downstream modüllerin karmaşıklığı azaltılır.
+
+**Priority gerekçesi:** `must` — DMA çıkışı ile FIFO girişi arasındaki protokol farkı bu modül olmadan çözülemez.
+
+---
+
+#### DMA-REQ-L2-002: FIFO → PWM Ses Dönüştürücü (fifo2audpwm)
+
+```yaml
+req_id: DMA-REQ-L2-002
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-002
+status: active
+implementing_component: fifo2audpwm_0
+source_file: src/hdl/fifo2audpwm.v
+source_doc: SDOC-A-002
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "FIFO'dan 32-bit veri okunduğunda 4 adet 8-bit sample çıkarılır"
+  - "256 seviyeli counter PWM duty cycle üretir"
+  - "FIFO boşken aud_en=0, veri varken aud_en=1 olur"
+  - "24.576 MHz clock ile çalışır"
+
+constraints:
+  - type: parameter
+    spec: "DATA_WIDTH=8, FIFO_DATA_WIDTH=32"
+  - type: interface
+    spec: "Xilinx FIFO read + Digilent PWM Audio bus"
+  - type: timing
+    spec: "PWM base clock: 24.576 MHz, sample rate: 24.576 MHz / (4 × 256) = 24 kHz per channel"
+  - type: clock_domain
+    spec: "clk_wiz_0 Clk_Out2 (24.576 MHz)"
+```
+
+**Neden bu modül var:**
+FPGA'da analog çıkış üretmenin en basit yolu PWM'dir. Nexys A7 board'unda Analog Devices SSM2377 amplifier, PWM girişli mono audio amplifier'dır — DAC gerekmez. 8-bit PWM çözünürlüğü, board'daki amplifier'ın kapasitesiyle uyumludur. 32-bit FIFO word'ünden 4 sample çıkarılması, FIFO okuma frekansını 4× düşürür ve clock geçişini kolaylaştırır (kaynak: `fifo2audpwm.v:37` — `aud_pwm = count[..] <= duty[..]`).
+
+**Seçilme motivasyonu:** Board'daki ses çıkış yolu PWM → RC filter → SSM2377 amplifier → 3.5mm jack olarak tasarlanmış. Bu donanım yapısı, PWM tabanlı ses üretimini en doğal ve verimli çözüm haline getirir.
+
+**Neden bu modül seçildi (detaylı):**
+1. **Board uyumluluğu:** SSM2377 amplifier PWM girişli — board tasarımcısı bu kullanımı öngörmüş.
+2. **Basit RTL:** Counter + comparator — 39 satır Verilog. I2S veya sigma-delta çok daha karmaşık.
+3. **8-bit çözünürlük:** 24.576 MHz / 256 = 96 kHz carrier > 20 kHz (insan duyma sınırı). Daha yüksek çözünürlükte carrier ses bandına düşer.
+4. **4-sample packing:** 32-bit FIFO word = 4 × 8-bit sample. FIFO okuma frekansı 4× düşer, CDC kolaylaşır.
+
+**Priority gerekçesi:** `must` — Bu modül olmadan ses duyulamaz.
+
+---
+
+#### DMA-REQ-L2-003: Donanım Ton Üreteci (tone_generator)
+
+```yaml
+req_id: DMA-REQ-L2-003
+level: L2
+type: functional
+priority: should
+parent: DMA-REQ-L1-001
+status: active  # NOT: çalışmıyor ama tasarımda mevcut → ISSUE-A-002 referansı
+implementing_component: tone_generator_0
+source_file: src/hdl/tone_generator.v
+source_doc: SDOC-A-003
+confidence: MEDIUM
+version: 1
+last_updated: 2026-02-23
+# PARSE_UNCERTAIN: tone_generator'ın neden devre dışı bırakıldığına dair mühendis açıklaması yok.
+# Aşağıdaki "neden çalışmıyor" açıklaması kod analizinden çıkarılmıştır, mühendis doğrulaması gerekir.
+
+acceptance_criteria:
+  - "261 Hz (Orta C) sinüs dalgası phase accumulator ile üretilir"
+  - "96 kHz sample rate ile AXI-Stream master çıkış verilir"
+  - "256 sample'lık paketler halinde TLAST üretilir"
+  - "Üretilen veri DMA S2MM kanalına gönderilir"
+
+constraints:
+  - type: parameter
+    spec: "INCREMENT = 0x00B22D0E, ACCUMULATOR_DEPTH = 32-bit"
+  - type: interface
+    spec: "AXI-Stream master (32-bit, 16-bit signed audio payload)"
+  - type: clock_domain
+    spec: "MIG ui_clk (~81 MHz)"
+
+known_issues:
+  - ref: ISSUE-A-002
+    detail: "Yazılımda devre dışı: helloworld.c:386 — case DEMO_MODE_HW_TONE_GEN: break; (dma_forward çağrılmıyor)"
+```
+
+**Neden bu modül var:**
+Donanımda ton üretimi, DMA S2MM kanalının doğru çalıştığını test etmek için tasarlanmıştır. Yazılım ton üretimine göre avantajı: CPU yükü sıfır, kesintisiz ses akışı. Phase accumulator yöntemi, tam sinüs LUT'u gerektirmez — MSB'ler doğrudan duty cycle olarak kullanılabilir.
+
+**Neden çalışmıyor:** # PARSE_UNCERTAIN — aşağıdaki analiz kod incelemesinden çıkarılmıştır, mühendis doğrulaması gerekir
+Kodda `axis_tlast = 1'b1` (kaynak: `tone_generator.v:69`) — her cycle'da TLAST aktif. Bu, DMA'nın her transfer'i 1 beat olarak görmesine neden olur ve verimli burst yapılamamasına yol açar. Ayrıca tone_generator 16-bit üretirken fifo2audpwm 8-bit bekler — bit genişliği uyumsuzluğu var (TODO yorumu: kaynak: `helloworld.c:194` — "modify tone_generator.v to support 8 bit audio").
+
+**Seçilme motivasyonu:** HW tone generator, DMA S2MM kanalının doğrulama aracıdır. Yazılım müdahalesi olmadan donanımdan donanıma veri akışını test eder. Ayrıca CPU yükü sıfır olduğu için ses kalitesi yazılım versiyonundan potansiyel olarak daha iyidir.
+
+**Neden bu modül seçildi (detaylı):**
+1. **DMA S2MM testi:** S2MM kanalına veri pompalayan bağımsız bir kaynak, DMA doğrulaması için gerekli.
+2. **CPU-independent ses:** Phase accumulator donanımda çalışır — MicroBlaze'e bağımlı değil.
+3. **Basit RTL:** 73 satır Verilog — accumulator + bit shift. LUT gerektirmez.
+4. **Bilinen bug:** `axis_tlast = 1'b1` hatası ve 16→8 bit uyumsuzluğu nedeniyle yazılımda devre dışı.
+
+**Priority gerekçesi:** `should` — Yazılım ton üretimi (SW tone gen) aynı işlevi yapıyor. HW tone gen bonus/test özelliği.
+
+---
+
+#### DMA-REQ-L2-004: Dual-Clock FIFO (Clock Domain Crossing)
+
+```yaml
+req_id: DMA-REQ-L2-004
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-001
+status: active
+implementing_component: fifo_generator_0
+source_file: design_1.tcl (IP instance)
+source_doc: SDOC-A-005
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "MIG ui_clk (~81 MHz, write) → 24.576 MHz (read) clock geçişi sağlanır"
+  - "4096 × 32-bit derinlikte buffer sağlanır"
+  - "Veri kaybı veya metastabilite oluşmaz"
+  - "Full ve empty flag'leri upstream/downstream modüllere bildirilir"
+
+constraints:
+  - type: ip
+    spec: "Xilinx FIFO Generator v13.2, independent clocks mode"
+  - type: depth
+    spec: "4096 word × 32-bit"
+  - type: timing
+    spec: "Write clock: MIG ui_clk (~81 MHz), Read clock: clk_wiz_0 Clk_Out2 (24.576 MHz)"
+```
+
+**Neden bu bileşen var:**
+DMA fabric clock'u (~81 MHz, MIG ui_clk) ile PWM audio clock'u (24.576 MHz) farklıdır. İki clock domain arasında veri geçirmek metastabilite riski taşır. Xilinx FIFO Generator, gray-code pointer'lar ve çift senkronizasyon flip-flop'ları ile güvenli CDC sağlar. 4096 derinlik, ~170 ms buffer sağlar (4096 × 4 sample / 96 kHz) — DMA transfer gecikmelerini absorbe eder.
+
+**Neden custom async FIFO yazılmadı:**
+Xilinx FIFO Generator IP, silicon-validated bir çözümdür. Custom async FIFO tasarlamak metastabilite hataları riski taşır ve simülasyonda yakalanması çok zordur — sadece uzun süreli hardware testinde ortaya çıkabilir. IP kullanmak güvenilirlik açısından doğru tercihtir.
+
+**Seçilme motivasyonu:** Clock domain crossing (CDC), FPGA tasarımında en kritik ve hata yapılması en kolay konulardan biridir. Xilinx'in silicon-validated FIFO IP'si, custom RTL'ye göre güvenilirlik garantisi sağlar ve tasarım süresini kısaltır.
+
+**Neden bu bileşen seçildi (detaylı):**
+1. **CDC güvenliği:** Gray-code pointer senkronizasyonu — Xilinx IP garantili metastabilite koruması sağlar.
+2. **Buffer kapasitesi:** 4096 × 32-bit = 16 KB. ~170 ms buffer, DMA burst jitter'ını absorbe eder.
+3. **Silicon-validated:** IP, FPGA silicon üzerinde doğrulanmış. Custom async FIFO'da CDC hatası simülasyonda yakalanması çok zor.
+4. **BRAM optimizasyonu:** FIFO Generator, BRAM primitive'lerini otomatik kullanır — el ile BRAM instantiation gerekmez.
+
+**Priority gerekçesi:** `must` — CDC olmadan veri bozulur.
+
+---
+
+#### DMA-REQ-L2-005: UART WAV Dosyası Alma ve Oynatma
+
+```yaml
+req_id: DMA-REQ-L2-005
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-002
+status: active
+implementing_component: axi_uartlite_0 + helloworld.c (recv_wav, play_wav)
+source_file: sdk/appsrc/helloworld.c
+source_doc: SDOC-A-004
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "UART üzerinden RIFF/WAV header parse edilir (header, format, data chunk)"
+  - "96 kHz sample rate doğrulanır"
+  - "8-bit ve 16-bit audio kabul edilir"
+  - "16-bit audio → 8-bit unsigned dönüşümü yapılır: (u8)((u16)(sample + 32768) >> 8)"
+  - "Alınan ses verisi DDR2'ye yazılır ve DMA ile oynatılır"
+
+constraints:
+  - type: uart
+    spec: "AXI UARTLite v2.0, 230400 baud, polling mode"
+  - type: format
+    spec: "WAV: RIFF header (12B) + fmt chunk (24B) + data chunk (8B + data)"
+  - type: memory
+    spec: "max_file_size = 0x7FFFFF (8 MB malloc)"
+  - type: limitation
+    spec: "Sadece 96 kHz sample rate, mono/stereo ayrımı yok"
+
+known_issues:
+  - ref: ISSUE-A-004
+    detail: "16-bit → 8-bit truncation ses kalitesini düşürür"
+  - ref: ISSUE-A-005
+    detail: "WAV dosyaları bellekte kalıcı saklanmaz"
+```
+
+**Neden UART ile dosya aktarımı:**
+Nexys A7-100T'de SD kart, Ethernet veya USB host arayüzü bu tasarımda kullanılmıyor. UART en basit aktarım yoludur — seri terminal ile doğrudan dosya gönderilebilir. 230400 baud rate, 96 kHz × 16-bit mono audio için yeterli değildir (gerçek zamanlı streaming için) ama "önce al, sonra oynat" modeli ile çalışır (kaynak: `helloworld.c` — recv_wav fonksiyonu veriyi DDR2'ye yazar, play_wav ayrı olarak oynatır).
+
+**Neden sadece 96 kHz:**
+PWM clock (24.576 MHz) bölü 256 seviye = 96 kHz. Donanım sabit 96 kHz'de sample çıkarır. Farklı sample rate desteği için ya donanımda interpolation/decimation ya da yazılımda resampling gerekir — bu demo kapsamında yoktur (kaynak: `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/README.md` — "only supports WAV files with 96KHz sample rates").
+
+**Seçilme motivasyonu:** Kullanıcının kendi ses dosyalarını board'a yükleyip dinleyebilmesi, demo uygulamasının etkileşimli değerini artırır. UART, board üzerinde zaten mevcut olan MicroUSB bağlantısını kullanarak sıfır ek maliyet ile dosya aktarımı sağlar.
+
+**Neden bu özellik seçildi (detaylı):**
+1. **Demo etkileşimi:** Sadece sabit ton çalmak yerine kullanıcı kendi WAV dosyasını dinleyebilir.
+2. **UART basitliği:** Board'daki MicroUSB → UART-to-USB çevirici, seri terminal ile doğrudan dosya gönderimi sağlar.
+3. **WAV formatı basitliği:** RIFF/WAV, en basit ses formatıdır — header parsing trivial (struct pointer cast).
+4. **Store-and-forward:** UART hızı gerçek zamanlı streaming için yetersiz, ama DDR2'ye kaydet → DMA ile oynat modeli çalışır.
+
+**Priority gerekçesi:** `must` — WAV oynatma projenin ana kullanım senaryosu.
+
+---
+
+#### DMA-REQ-L2-006: GPIO Kullanıcı Arayüzü
+
+```yaml
+req_id: DMA-REQ-L2-006
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-002
+status: active
+implementing_component: GPIO_IN (axi_gpio), GPIO_OUT (axi_gpio)
+source_file: design_1.tcl + sdk/appsrc/helloworld.c
+source_doc: SDOC-A-005, SDOC-A-004
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "5 buton okunur: C=Pause(0x01), U=HW Tone(0x02), L=Recv WAV(0x04), R=Play WAV(0x08), D=SW Tone(0x10)"
+  - "16 DIP switch okunur"
+  - "16 LED ve 3 RGB LED yazılır"
+  - "Buton edge detection (positive edge) polling ile çalışır"
+
+constraints:
+  - type: ip
+    spec: "GPIO_IN: AXI GPIO dual channel — CH1: buttons 5-bit, CH2: switches 16-bit"
+  - type: ip
+    spec: "GPIO_OUT: AXI GPIO dual channel — CH1: RGB LEDs, CH2: LEDs 16-bit"
+  - type: address
+    spec: "GPIO_IN: 0x40000000, GPIO_OUT: 0x40010000"
+  - type: interrupt
+    spec: "GPIO_IN.ip2intc_irpt → xlconcat_1.In0, GPIO_OUT.ip2intc_irpt → xlconcat_1.In1"
+
+known_issues:
+  - ref: ISSUE-A-006
+    detail: "Polling bazlı — yüksek CPU yükü, buton kaçırma riski"
+```
+
+**Neden 2 ayrı GPIO instance:**
+Giriş (buton/switch) ve çıkış (LED) ayrı IP instance'larında çünkü:
+1. Farklı data direction konfigürasyonu gerekiyor
+2. Her biri dual channel — toplam 4 kanal gerekli, tek IP sadece 2 kanal destekler
+3. Interrupt kaynakları ayrı
+
+**Seçilme motivasyonu:** Fiziksel kullanıcı arayüzü (butonlar, switch'ler, LED'ler) demo uygulamasının etkileşim noktalarıdır. GPIO IP, bu I/O'ları AXI bus üzerinden yazılıma bağlamanın standart Xilinx yöntemidir.
+
+**Neden bu yapı seçildi (detaylı):**
+1. **4 kanal gereksinimi:** Butonlar (5-bit giriş), switch'ler (16-bit giriş), LED'ler (16-bit çıkış), RGB LED'ler (çıkış). Tek GPIO IP sadece 2 kanal destekler.
+2. **Standart IP:** AXI GPIO, Xilinx'in en temel periferik IP'sidir. Driver desteği (xgpio.h) hazır.
+3. **Adres ayrımı:** Her GPIO instance ayrı adres alanında (0x40000000, 0x40010000) — yazılımda ayrı XGpio instance olarak yönetilir.
+
+**Priority gerekçesi:** `must` — Kullanıcı mod seçimi yapamadan demo kullanılamaz.
+
+---
+
+#### DMA-REQ-L2-007: Yazılımla Ton Üretimi (SW Tone Gen)
+
+```yaml
+req_id: DMA-REQ-L2-007
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-003
+status: active
+implementing_component: helloworld.c::dma_sw_tone_gen()
+source_file: sdk/appsrc/helloworld.c
+source_doc: SDOC-A-004
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "MicroBlaze üzerinde 261 Hz sinüs dalgası hesaplanır"
+  - "Phase accumulator (0x00B22D0E increment) ile sample üretilir"
+  - "128 byte'lık buffer'lar halinde DMA MM2S ile gönderilir"
+  - "Herhangi bir buton basılınca ton durdurulur"
+  - "Varsayılan başlangıç modu olarak çalışır"
+
+constraints:
+  - type: algorithm
+    spec: "Phase accumulator: accum += 0x00B22D0E, sample = accum >> 24"
+  - type: buffer
+    spec: "128 byte malloc buffer, döngüsel DMA gönderim"
+  - type: audio
+    spec: "261 Hz, 96 kHz sample rate, 8-bit unsigned"
+```
+
+**Neden yazılım ton üretimi var:**
+Donanım ton üreteci (DMA-REQ-L2-003) çalışmadığı için yazılım alternatifi varsayılan moddur. Board'a güç verildiğinde hemen ses çıkışı başlar — kullanıcı sistemin çalıştığını anlar. Phase accumulator algoritması hem HW hem SW'de aynıdır (0x00B22D0E), ancak SW versiyonu 8-bit çıkış üretir (HW 16-bit) (kaynak: `helloworld.c:353-380` — dma_sw_tone_gen fonksiyonu).
+
+**Seçilme motivasyonu:** Board power-on sonrası anında ses çıkışı, sistemin çalıştığının hızlı doğrulamasıdır (board-up verification). HW tone gen çalışmadığı için SW alternatifi bu kritik fonksiyonu sağlar.
+
+**Neden bu özellik seçildi (detaylı):**
+1. **Board-up verification:** Güç verildiğinde ses duyulması = sistem çalışıyor.
+2. **HW fallback:** tone_generator.v çalışmıyor (ISSUE-A-002) → SW alternatifi zorunlu.
+3. **Aynı algoritma:** Phase accumulator (0x00B22D0E), HW ve SW'de aynı — karşılaştırma mümkün.
+4. **8-bit uyumu:** SW versiyonu 8-bit çıkış üretir → fifo2audpwm ile uyumlu (HW versiyonu 16-bit, uyumsuz).
+
+**Priority gerekçesi:** `must` — HW tone gen çalışmadığı için bu varsayılan mod. Board-up verification fonksiyonu var.
+
+---
+
+#### DMA-REQ-L2-008: Clock Wizard
+
+```yaml
+req_id: DMA-REQ-L2-008
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-004
+status: active
+implementing_component: clk_wiz_0
+source_file: design_1.tcl
+source_doc: SDOC-A-005
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "100 MHz harici clock girişinden 2 çıkış üretilir"
+  - "Clk_Out1: 140.625 MHz (MIG reference clock)"
+  - "Clk_Out2: 24.576 MHz (audio PWM base clock)"
+  - "resetn portu harici reset butonuna bağlıdır"
+
+constraints:
+  - type: ip
+    spec: "Xilinx Clocking Wizard v6.0"
+  - type: input
+    spec: "sys_clock: 100 MHz (E3 pini, LVCMOS33)"
+  - type: output
+    spec: "Clk_Out1 → mig_7series_0/sys_clk_i, Clk_Out2 → fifo2audpwm_0/clk + fifo_generator_0/rd_clk"
+```
+
+**Neden bu frekanslar:**
+- **140.625 MHz:** MIG DDR2 kontrolcüsünün PHY reference clock'u olarak gereklidir (kaynak: `design_1.tcl` MIG konfigürasyonu).
+- **24.576 MHz:** Standart audio clock ailesi. 24.576 / 256 = 96 kHz sample rate. Bu clock frekansı, profesyonel ses ekipmanlarında standart referans clock'tur (48 kHz × 512).
+
+**Seçilme motivasyonu:** Board'daki 100 MHz osilatör tek frekans sağlar, ancak projede 3 farklı frekans gereklidir. Clock Wizard (PLL/MMCM), tek kaynaktan birden fazla frekans türetmenin standart Xilinx yöntemidir.
+
+**Neden bu bileşen seçildi (detaylı):**
+1. **Çoklu frekans ihtiyacı:** MIG PHY (140.625 MHz) ve audio PWM (24.576 MHz) farklı frekanslar gerektirir.
+2. **Jitter temizleme:** PLL, harici osilatörün jitter'ını temizler — DDR2 PHY timing margini artar.
+3. **BUFG dağıtımı:** Clock Wizard çıkışları otomatik BUFG'den geçer — clock tree düzgün oluşturulur.
+
+**Priority gerekçesi:** `must` — Tüm sistem bu clock'lara bağımlı.
+
+---
+
+#### DMA-REQ-L2-009: Reset Controller
+
+```yaml
+req_id: DMA-REQ-L2-009
+level: L2
+type: functional
+priority: must
+parent: DMA-REQ-L1-004
+status: active
+implementing_component: rst_mig_7series_0_81M
+source_file: design_1.tcl
+source_doc: SDOC-A-005
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "MIG ui_clk_sync_rst → ext_reset_in bağlantısı ile MIG reset senkronize edilir"
+  - "MIG mmcm_locked → dcm_locked bağlantısı ile PLL lock kontrolü yapılır"
+  - "peripheral_aresetn tüm AXI periferiklere dağıtılır"
+  - "interconnect_aresetn AXI Interconnect'lere dağıtılır"
+
+constraints:
+  - type: ip
+    spec: "Xilinx Processor System Reset v5.0"
+  - type: signal
+    spec: "slowest_sync_clk ← MIG ui_clk"
+```
+
+**Neden MIG tabanlı reset:**
+Bu tasarımda master clock MIG'in ui_clk'ıdır (clk_wiz_0'ın Clk_Out1'i değil). MIG başlatma süreci (DDR2 kalibrasyonu) tamamlanmadan sistem stabil çalışamaz. Bu nedenle reset kontrolcüsü MIG'in ui_clk_sync_rst'ına bağlıdır — DDR2 hazır olduğunda reset bırakılır (kaynak: `design_1.tcl` — proc_sys_reset bağlantıları).
+
+**Seçilme motivasyonu:** Senkronize reset dağıtımı, tüm AXI bileşenlerinin aynı anda ve güvenli şekilde başlatılmasını sağlar. MIG tabanlı reset, DDR2 kalibrasyonu tamamlanmadan sistem başlatılmamasını garanti eder.
+
+**Priority gerekçesi:** `must` — Reset altyapısı olmadan güvenilir başlatma yapılamaz.
+
+---
+
+#### DMA-REQ-L2-010: Debug Module (MDM)
+
+```yaml
+req_id: DMA-REQ-L2-010
+level: L2
+type: functional
+priority: should
+parent: DMA-REQ-L1-004
+status: active
+implementing_component: mdm_1
+source_file: design_1.tcl
+source_doc: SDOC-A-005
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "JTAG üzerinden MicroBlaze debug erişimi sağlanır"
+  - "Program yükleme ve breakpoint desteği mevcuttur"
+
+constraints:
+  - type: ip
+    spec: "Xilinx MDM v3.2"
+  - type: interface
+    spec: "MBDEBUG_0 ↔ MicroBlaze DEBUG port"
+```
+
+**Neden var:** SDK'dan program yükleme ve debug için zorunludur. Production'da kaldırılabilir ama development sürecinde olmazsa olmaz.
+
+**Seçilme motivasyonu:** MicroBlaze geliştirme döngüsü (code → compile → upload → test) MDM olmadan mümkün değildir. JTAG üzerinden program yükleme ve breakpoint debug, embedded development'ın temel aracıdır.
+
+**Priority gerekçesi:** `should` — Sistem MDM olmadan da çalışır ama geliştirme yapılamaz.
+
+---
+
+#### DMA-REQ-L2-011: Interrupt Controller
+
+```yaml
+req_id: DMA-REQ-L2-011
+level: L2
+type: functional
+priority: should
+parent: DMA-REQ-L1-003
+status: active
+implementing_component: microblaze_0_axi_intc + xlconcat_0 + xlconcat_1
+source_file: design_1.tcl
+source_doc: SDOC-A-005
+confidence: MEDIUM
+version: 1
+last_updated: 2026-02-23
+# PARSE_UNCERTAIN: Interrupt controller'ın neden kurulup kullanılmadığına dair mühendis açıklaması yok.
+# Aşağıdaki "neden kullanılmıyor" açıklaması tahmin bazlıdır.
+
+acceptance_criteria:
+  - "DMA MM2S + S2MM interrupt'ları birleştirilir (xlconcat_0)"
+  - "GPIO_IN + GPIO_OUT + UART interrupt'ları birleştirilir (xlconcat_1)"
+  - "MicroBlaze INTERRUPT portuna bağlanır"
+
+constraints:
+  - type: ip
+    spec: "AXI INTC v4.1 + xlconcat v2.1 (2 instance)"
+  - type: address
+    spec: "0x41200000"
+
+known_issues:
+  - ref: ISSUE-A-006
+    detail: "Interrupt controller mevcut ama yazılım polling kullanıyor — interrupt handler implement edilmemiş"
+```
+
+**Neden var:** # PARSE_UNCERTAIN
+Donanımda interrupt altyapısı kurulmuş ancak yazılımda kullanılmıyor. Muhtemelen gelecekte interrupt-driven mode eklenecekti ama demo seviyesinde polling yeterli görülmüş. Bu bir tahmindir — mühendis bu kararı açıkça belgelememiş.
+
+**Seçilme motivasyonu:** # PARSE_UNCERTAIN
+Block Automation MicroBlaze için interrupt controller'ı otomatik ekler. Kaldırılması ekstra iş gerektirir. Bırakılması, gelecekte interrupt-driven mode'a geçiş maliyetini düşürür.
+
+**Priority gerekçesi:** `should` — Donanımda var ama yazılım kullanmıyor. Gelecek geliştirme için hazır.
+
+---
+
+## 4.3 Decision Kayıtları (DMA-Audio)
+
+### DMA-DEC-001: PWM Tabanlı Ses Çıkışı
+
+```yaml
+decision_id: DMA-DEC-001
+title: "Ses çıkış yöntemi olarak PWM seçimi"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - DMA-REQ-L1-002
+  - DMA-REQ-L2-002
+
+chosen_option: "FPGA dahili PWM + onboard SSM2377 amplifier"
+
+alternatives:
+  - option: "I2S DAC (Pmod I2S veya harici)"
+    rejected_because: >
+      Nexys A7-100T board'unda I2S DAC çipi yok. Pmod I2S ek donanım
+      gerektirir — demo projesi olarak board-only çalışması hedefleniyor.
+      Ayrıca I2S DAC bit-perfect ses verir ama bu demo için 8-bit PWM
+      kalitesi yeterlidir.
+  - option: "Sigma-Delta DAC (FPGA RTL)"
+    rejected_because: >
+      Daha yüksek çözünürlük sağlar ama tasarım karmaşıklığı artar.
+      Nexys A7'deki audio amplifier zaten PWM girişli (SSM2377),
+      sigma-delta çıkışı board'un analog filtresiyle uyumsuz olabilir.
+  - option: "Board'daki onboard mikrofon girişini kullanma (PDM)"
+    rejected_because: >
+      Mikrofon giriş yönlü — çıkış için kullanılamaz. Ayrıca PDM
+      decode ek mantık gerektirir.
+
+consequences:
+  - "Ses kalitesi 8-bit ile sınırlı (256 seviye PWM)"
+  - "Mono çıkış (board'da tek amplifier)"
+  - "Ek donanım gerekmez — board-only demo"
+  - "Basit RTL implementasyonu (counter + comparator)"
+
+rationale_detail: >
+  Board şemasında audio çıkış yolu: FPGA pin (A11) → RC low-pass filter →
+  SSM2377 amplifier → 3.5mm jack. Bu yol PWM için optimize edilmiş. Board
+  tasarımcısı zaten bu kullanımı öngörmüş.
+```
+
+### DMA-DEC-002: MicroBlaze + DMA Mimarisi
+
+```yaml
+decision_id: DMA-DEC-002
+title: "Ses veri akışı için MicroBlaze + AXI DMA mimarisi"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - DMA-REQ-L1-001
+  - DMA-REQ-L1-003
+
+chosen_option: "MicroBlaze soft processor + AXI DMA (simple mode)"
+
+alternatives:
+  - option: "Tamamen RTL tabanlı ses pipeline (FSM kontrollü)"
+    rejected_because: >
+      WAV header parsing, UART protokolü, mod yönetimi gibi kontrol
+      görevleri pure RTL'de çok karmaşık. C kodunda 395 satır — Verilog'da
+      binlerce satır olurdu. Ayrıca UART'tan WAV alma gibi değişken
+      uzunluklu protokol işlemleri FSM ile verimsiz.
+  - option: "DMA yerine CPU-driven memcpy ile veri aktarımı"
+    rejected_because: >
+      MicroBlaze 96 kHz × 8-bit = 768 kbps veriyi sürekli kopyalamak
+      zorunda kalır. Cache miss'leri ve interrupt gecikmeleri ses
+      kesintilerine (audio glitch) neden olur. DMA donanımsal olarak
+      kesintisiz aktarım sağlar.
+  - option: "AXI DMA scatter-gather mode"
+    rejected_because: >
+      SG mode daha karmaşık (BD ring management), bu demo için gereksiz.
+      Simple mode, tek bir buffer transfer'i için yeterli. helloworld.c'deki
+      init_dma() fonksiyonu SG modunu açıkça reddeder (kaynak: helloworld.c:50 —
+      "ERROR! Device configured as SG mode.").
+
+consequences:
+  - "MicroBlaze ~1000 LUT kullanır ama kontrol esnekliği sağlar"
+  - "SDK/BSP gerekli → build süreci uzar"
+  - "DMA interrupt handler mevcut ama kullanılmıyor (polling)"
+  - "WAV parser, mod yönetimi C'de trivial"
+```
+
+### DMA-DEC-003: Dual-Clock FIFO ile Clock Domain Crossing
+
+```yaml
+decision_id: DMA-DEC-003
+title: "DMA ↔ Audio arası clock domain crossing yöntemi"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - DMA-REQ-L2-004
+  - DMA-REQ-L1-004
+
+chosen_option: "Xilinx FIFO Generator IP (dual-clock, independent clocks mode)"
+
+alternatives:
+  - option: "Custom async FIFO (RTL gray-code)"
+    rejected_because: >
+      Metastabilite riski. Xilinx IP silicon-verified, gray-code pointer
+      senkronizasyonu, BRAM primitive optimizasyonu built-in. Custom
+      FIFO'da CDC hataları simülasyonda yakalanması çok zor — sadece
+      uzun süreli hardware testinde ortaya çıkabilir.
+  - option: "Tek clock domain (tüm sistemi 24.576 MHz'de çalıştır)"
+    rejected_because: >
+      DDR2 MIG minimum 81 MHz ui_clk gerektirir. MicroBlaze da bu
+      hızda daha verimli çalışır. 24.576 MHz'de DDR2 çalışmaz.
+  - option: "Handshake-based CDC (req/ack protocol)"
+    rejected_because: >
+      Streaming veri için throughput çok düşük. Her sample için
+      handshake overhead kabul edilemez. FIFO doğal bir bursty-to-
+      continuous converter — DMA burst geldiğinde hızlıca dolar,
+      PWM tarafında yavaşça boşalır.
+
+consequences:
+  - "4096 × 32-bit FIFO ~ 16 KB → BRAM kullanır"
+  - "~170 ms buffer latency (4096 × 4 / 96 kHz)"
+  - "DMA burst timing jitter'ı absorbe edilir"
+  - "Metastabilite riski sıfır (Xilinx IP garantisi)"
+```
+
+### DMA-DEC-004: 8-bit Audio Çözünürlük Kararı
+
+```yaml
+decision_id: DMA-DEC-004
+title: "Ses çıkış çözünürlüğü 8-bit olarak belirlenmesi"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - DMA-REQ-L2-002
+  - DMA-REQ-L2-005
+
+chosen_option: "8-bit unsigned PWM (256 seviye)"
+
+alternatives:
+  - option: "16-bit PWM"
+    rejected_because: >
+      16-bit PWM için 24.576 MHz / 65536 = 375 Hz carrier frequency —
+      ses bandında! Audible artifacts oluşur. 8-bit ile 24.576 MHz / 256 =
+      96 kHz carrier — ses bandının çok üstünde, RC filtresi ile temiz
+      analog sinyal elde edilir.
+  - option: "Multi-bit (sigma-delta) PWM"
+    rejected_because: >
+      Daha karmaşık RTL, board'daki analog filtre buna uygun olmayabilir.
+      Demo kapsamında gereksiz karmaşıklık.
+  - option: "12-bit PWM (uzlaşma)"
+    rejected_because: >
+      24.576 MHz / 4096 = 6 kHz carrier — hâlâ ses bandında (20 Hz-20 kHz).
+      8-bit tek güvenli seçenek.
+
+consequences:
+  - "Ses kalitesi telefon kalitesinde (~48 dB SNR)"
+  - "16-bit WAV dosyaları truncate ediliyor → kalite kaybı"
+  - "Basit donanım: tek counter + tek comparator"
+
+rationale_detail: >
+  PWM carrier frekansı = clock / 2^N. Duyulabilir ses 20 kHz'e kadar.
+  Carrier duyulmamalı. 24.576 MHz / 2^8 = 96 kHz > 20 kHz ✓
+  24.576 MHz / 2^12 = 6 kHz < 20 kHz ✗
+  Dolayısıyla 8-bit, bu clock frekansında mümkün olan maksimum çözünürlük.
+```
+
+### DMA-DEC-005: Interrupt Altyapısı Kurulup Kullanılmaması
+
+```yaml
+decision_id: DMA-DEC-005
+title: "Interrupt controller kurulması ama yazılımda polling kullanılması"
+confidence: MEDIUM
+version: 1
+last_updated: 2026-02-23
+# PARSE_UNCERTAIN: Bu kararın gerekçesi mühendis tarafından açıkça belgelenmemiştir.
+# Aşağıdaki açıklama kod analizi ve bağlamdan çıkarılmış tahmindir.
+related_requirements:
+  - DMA-REQ-L2-011
+  - DMA-REQ-L2-006
+
+chosen_option: "Donanımda interrupt mevcut, yazılımda polling"
+
+alternatives:
+  - option: "Interrupt-driven tam asenkron yazılım"
+    rejected_because: >
+      Demo yazılımı basit tutulmak isteniyor. Interrupt handler'lar
+      ISR context, stack management, race condition gibi karmaşıklık
+      ekler. Polling tabanlı main loop, adım adım okunabilir eğitim
+      kodu üretir.
+  - option: "Interrupt controller hiç koymamak"
+    rejected_because: >
+      Gelecekte interrupt-driven moda geçiş istenebilir. Donanım
+      hazır olması yazılım güncelleme maliyetini düşürür. IP ekleme
+      maliyeti düşük (~100 LUT).
+
+consequences:
+  - "CPU sürekli meşgul (while(1) döngüsü)"
+  - "Buton basılırken DMA transfer aktifse kaçırılabilir"
+  - "Donanım kaynağı (INTC, xlconcat) gereksiz kullanılıyor"
+  - "Gelecek geliştirme için altyapı hazır"
+```
+
+---
+
+## 4.4 Metadata
+
+### 4.4.1 COMPONENT Node'ları (Zenginleştirilmiş — port/parametre bilgileri ile)
+
+| ID | Type | Source | Parent L2 | Ports | Parameters |
+|----|------|--------|-----------|-------|------------|
+| `axis2fifo_0` | RTL_Module | SDOC-A-001 | DMA-REQ-L2-001 | clk(in), axis_tdata[31:0](in), axis_tvalid(in), axis_tready(out), fifo_wr_data[15:0](out), fifo_wr_en(out), fifo_full(in) | — |
+| `fifo2audpwm_0` | RTL_Module | SDOC-A-002 | DMA-REQ-L2-002 | clk(in), fifo_rd_data[31:0](in), fifo_rd_en(out), fifo_empty(in), aud_pwm(out), aud_en(out) | DATA_WIDTH=8, FIFO_DATA_WIDTH=32 |
+| `tone_generator_0` | RTL_Module | SDOC-A-003 | DMA-REQ-L2-003 | clk(in), axis_tdata[31:0](out), axis_tvalid(out), axis_tready(in), axis_tlast(out), axis_tkeep[3:0](out) | INCREMENT=0x00B22D0E |
+| `fifo_generator_0` | IP_Core | SDOC-A-005 | DMA-REQ-L2-004 | wr_clk(in), rd_clk(in), din[31:0](in), wr_en(in), rd_en(in), dout[31:0](out), full(out), empty(out) | FIFO_DEPTH=4096, DATA_WIDTH=32, independent_clocks |
+| `axi_uartlite_0` | IP_Core | SDOC-A-005 | DMA-REQ-L2-005 | s_axi_*(AXI-Lite slave), rx(in), tx(out), interrupt(out) | C_BAUDRATE=230400 |
+| `GPIO_IN` | IP_Core | SDOC-A-005 | DMA-REQ-L2-006 | s_axi_*(AXI-Lite slave), gpio_io_i[4:0](in CH1), gpio2_io_i[15:0](in CH2), ip2intc_irpt(out) | C_GPIO_WIDTH=5, C_GPIO2_WIDTH=16, C_IS_DUAL=1 |
+| `GPIO_OUT` | IP_Core | SDOC-A-005 | DMA-REQ-L2-006 | s_axi_*(AXI-Lite slave), gpio_io_o(out CH1), gpio2_io_o[15:0](out CH2), ip2intc_irpt(out) | C_ALL_OUTPUTS=1, C_IS_DUAL=1 |
+| `helloworld` | SW_Application | SDOC-A-004 | DMA-REQ-L2-007 | — | main(), dma_sw_tone_gen(), recv_wav(), play_wav() |
+| `clk_wiz_0` | IP_Core | SDOC-A-005 | DMA-REQ-L2-008 | clk_in1(in), resetn(in), clk_out1(out 140.625MHz), clk_out2(out 24.576MHz), locked(out) | CLKOUT1_FREQ=140.625, CLKOUT2_FREQ=24.576 |
+| `rst_mig_7series_0_81M` | IP_Core | SDOC-A-005 | DMA-REQ-L2-009 | slowest_sync_clk(in), ext_reset_in(in), dcm_locked(in), peripheral_aresetn(out), interconnect_aresetn(out), mb_reset(out) | — |
+| `mdm_1` | IP_Core | SDOC-A-005 | DMA-REQ-L2-010 | Debug(MBDEBUG_0) | C_MB_DBG_PORTS=1 |
+| `microblaze_0_axi_intc` | IP_Core | SDOC-A-005 | DMA-REQ-L2-011 | s_axi_*(AXI-Lite slave), intr[N:0](in), irq(out) | — |
+| `microblaze_0` | IP_Core | SDOC-A-005 | DMA-REQ-L1-003 | M_AXI_DC, M_AXI_IC, M_AXI_DP, DLMB, ILMB, DEBUG, INTERRUPT, Clk(in), Reset(in) | C_USE_ICACHE=1, C_USE_DCACHE=1 |
+| `axi_dma_0` | IP_Core | SDOC-A-005 | DMA-REQ-L1-001 | s_axi_lite_*(control), M_AXI_MM2S(master), M_AXI_S2MM(master), M_AXIS_MM2S(stream out), S_AXIS_S2MM(stream in), mm2s_introut(out), s2mm_introut(out) | c_include_sg=0, c_sg_include_stscntrl_strm=0 |
+| `mig_7series_0` | IP_Core | SDOC-A-005 | DMA-REQ-L1-004 | S_AXI(slave), ui_clk(out), ui_clk_sync_rst(out), mmcm_locked(out), init_calib_complete(out), DDR2_*(external) | — |
+| `axi_interconnect_0` | IP_Core | SDOC-A-005 | DMA-REQ-L1-001 (infra) | S00_AXI..S03_AXI(slave), M00_AXI(master) | NUM_SI=4, NUM_MI=1 |
+| `microblaze_0_axi_periph` | IP_Core | SDOC-A-005 | DMA-REQ-L1-003 (infra) | S00_AXI(slave), M00..M04_AXI(master) | NUM_SI=1, NUM_MI=5 |
+| `pwm_audio_bus` | Custom_Interface | SDOC-A-009 | DMA-REQ-L2-002 | pwm(out), en(out), gain(out) | — |
+
+### 4.4.2 CONSTRAINT Node'ları
+
+| ID | Type | Spec | Kaynak |
+|----|------|------|--------|
+| `CONST-A-PIN-001` | pin | PWM_AUDIO_0_pwm → A11 (LVCMOS33) | SDOC-A-006 |
+| `CONST-A-PIN-002` | pin | PWM_AUDIO_0_en → D12 (LVCMOS33) | SDOC-A-006 |
+| `CONST-A-CLK-001` | clock | sys_clock: 100 MHz (E3) | SDOC-A-005 |
+| `CONST-A-CLK-002` | clock | clk_out1: 140.625 MHz → MIG | SDOC-A-005 |
+| `CONST-A-CLK-003` | clock | clk_out2: 24.576 MHz → audio | SDOC-A-005 |
+| `CONST-A-CLK-004` | clock | MIG ui_clk: ~81 MHz → fabric | SDOC-A-005 |
+| `CONST-A-MEM-001` | memory | DDR2 128 MB @ 0x80000000 | SDOC-A-005 |
+| `CONST-A-ADDR-001` | address | GPIO_IN: 0x40000000 | SDOC-A-005 |
+| `CONST-A-ADDR-002` | address | GPIO_OUT: 0x40010000 | SDOC-A-005 |
+| `CONST-A-ADDR-003` | address | AXI DMA: 0x41E00000 | SDOC-A-005 |
+| `CONST-A-ADDR-004` | address | UART: 0x40600000 | SDOC-A-005 |
+| `CONST-A-ADDR-005` | address | INTC: 0x41200000 | SDOC-A-005 |
+| `CONST-A-ADDR-006` | address | LMB BRAM: 0x00000000 (64KB) | SDOC-A-005 |
+| `CONST-A-UART-001` | interface | 230400 baud, 8N1 | SDOC-A-005 |
+| `CONST-A-DMA-001` | bandwidth | 256-byte burst, 27-bit addr | SDOC-A-005 |
+| `CONST-A-FIFO-001` | buffer | 4096 × 32-bit dual-clock | SDOC-A-005 |
+
+### 4.4.3 EVIDENCE Node'ları (Bağlam Boşlukları Doldurulmuş)
+
+| ID | Type | İçerik | Tam Kaynak Yolu |
+|----|------|--------|-----------------|
+| `EVID-A-001` | code | `axis2fifo.v:35` — `fifo_wr_data = axis_tdata[15:0]` (sadece alt 16-bit) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/axis2fifo.v:35` |
+| `EVID-A-002` | code | `fifo2audpwm.v:37` — `aud_pwm = count[..] <= duty[..]` (256-level PWM) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/fifo2audpwm.v:37` |
+| `EVID-A-003` | code | `tone_generator.v:69` — `axis_tlast = 1'b1` (sabit, packet boundary yok) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/tone_generator.v:69` |
+| `EVID-A-004` | code | `helloworld.c:386` — `case DEMO_MODE_HW_TONE_GEN: break;` (devre dışı) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/sdk/appsrc/helloworld.c:386` |
+| `EVID-A-005` | code | `helloworld.c:287` — `(u8)((u16)(wav_data[i]+32768)>>8)` (16→8 bit truncation) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/sdk/appsrc/helloworld.c:287` |
+| `EVID-A-006` | code | `tone_generator.v:51` — `axis_tvalid = 1` (her zaman valid, SoP'suz) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/tone_generator.v:51` |
+| `EVID-A-007` | code | `helloworld.c:194` — TODO: "modify tone_generator.v to support 8 bit audio" | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/sdk/appsrc/helloworld.c:194` |
+| `EVID-A-008` | doc | "Hardware Tone Generation functionality is not currently working" | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/README.md` |
+| `EVID-A-009` | doc | "only supports WAV files with 96KHz sample rates" | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/README.md` |
+| `EVID-A-010` | config | `project_info.tcl`: part="xc7a50ticsg324-1L" (50T, proje adı 100T) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/project_info.tcl` |
+| `EVID-A-011` | code | `axis2fifo.v:33` — `axis_tready = ~fifo_full` (backpressure) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/axis2fifo.v:33` |
+| `EVID-A-012` | code | `fifo2audpwm.v:23-26` — `aud_en` FIFO empty'ye bağlı (flow control) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/hdl/fifo2audpwm.v:23-26` |
+
+### 4.4.4 ISSUE Node'ları (Tutarlı Severity Skalası)
+
+| ID | Severity | Açıklama | İlgili İster | Kanıt |
+|----|----------|----------|--------------|-------|
+| `ISSUE-A-001` | **critical** | Part tutarsızlığı: project_info.tcl xc7a50t, proje adı A7-100T | DMA-REQ-L0-001 | EVID-A-010 |
+| `ISSUE-A-002` | **high** | HW Tone Generator çalışmıyor — `axis_tlast=1` hatası + SW'de devre dışı | DMA-REQ-L2-003 | EVID-A-003, EVID-A-004, EVID-A-008 |
+| `ISSUE-A-003` | **medium** | Sadece 96 kHz WAV destekleniyor | DMA-REQ-L2-005 | EVID-A-009 |
+| `ISSUE-A-004` | **medium** | 16-bit → 8-bit truncation ses kalitesini düşürür | DMA-REQ-L2-005 | EVID-A-005 |
+| `ISSUE-A-005` | **low** | WAV dosyaları bellekte kalıcı saklanmaz | DMA-REQ-L2-005 | EVID-A-008 |
+| `ISSUE-A-006` | **low** | Polling bazlı GPIO, interrupt handler yok | DMA-REQ-L2-006, DMA-REQ-L2-011 | SDOC-A-004 main loop |
+| `ISSUE-A-007` | **info** | Testbench dosyası yok | — | Proje yapısı incelemesi |
+| `ISSUE-A-008` | **info** | digilent-vivado-scripts submodule boş (init edilmemiş) | DMA-REQ-L1-005 | `.gitmodules` dosyası |
+
+### 4.4.5 PATTERN Node'ları
+
+| ID | Pattern | Kullanım |
+|----|---------|----------|
+| `PAT-A-001` | **Phase Accumulator Tone Gen:** `accum += INCREMENT; sample = accum >> (32-N)` | tone_generator.v, helloworld.c::dma_sw_tone_gen() |
+| `PAT-A-002` | **AXI-Stream ↔ FIFO Bridge:** Custom RTL ile AXI-Stream slave → FIFO write adaptörü | axis2fifo.v |
+| `PAT-A-003` | **Counter-based PWM:** `pwm_out = (counter < duty_cycle)` | fifo2audpwm.v |
+| `PAT-A-004` | **Dual-Clock FIFO CDC:** Xilinx FIFO Generator independent clocks mode ile CDC | fifo_generator_0 config |
+| `PAT-A-005` | **WAV Header Parsing (C):** Raw byte buffer'dan struct pointer cast ile header çıkarma | helloworld.c Wav_HeaderRaw/FormatRaw/DataRaw |
+| `PAT-A-006` | **Backpressure via FIFO Full:** `tready = ~fifo_full` — FIFO dolunca upstream durdurulur | axis2fifo.v:33 |
+
+---
+
+# 5. PROJE B: axi_example
+
+## 5.1 Proje Özeti
+
+| Alan | Değer |
+|------|-------|
+| **Proje Adı** | axi_example |
+| **Proje Tipi** | Eğitim / Validasyon test suite |
+| **Board** | Digilent Nexys Video |
+| **FPGA** | xc7a200tsbg484-1 (Artix-7 200T) |
+| **Vivado** | 2025.1 |
+| **Dil** | Verilog (HDL) |
+| **Geliştirici** | Kullanıcı (in-house) |
+| **Metodoloji** | CLI-first (TCL batch mode) |
+
+---
+
+## 5.2 İster Ağacı
+
+### AXI-REQ-L0-001: Sistem Gereksinimleri
+
+```yaml
+req_id: AXI-REQ-L0-001
+level: L0
+type: educational
+priority: must
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "Nexys Video board üzerinde AXI bus mimarisi örnekleri çalıştırılır"
+  - "Basit GPIO'dan MicroBlaze+AXI sistemine kademeli ilerleme sağlanır"
+  - "TCL otomasyon ile tüm örnekler yeniden üretilebilir"
+  - "Sentez başarıyla tamamlanır ve timing karşılanır (WNS ≥ 0 ns)"
+  - "Kaynak kullanımı < %5 (eğitim projesi)"
+
+constraints:
+  - type: board
+    spec: "Digilent Nexys Video (xc7a200tsbg484-1)"
+  - type: tool
+    spec: "Vivado 2025.1"
+  - type: methodology
+    spec: "CLI-first — tüm adımlar TCL script ile yapılabilmeli"
+```
+
+**Neden bu gereksinim var:**
+AXI bus mimarisi, Xilinx FPGA tasarımlarının temel yapı taşıdır. Ancak öğrenme eğrisi dik — MicroBlaze, AXI Interconnect, address mapping gibi kavramlar birlikte karmaşık bir yapı oluşturur. Bu proje, kavramları kademeli olarak tanıtarak öğrenme eğrisini düşürmeyi amaçlar. CLI-first yaklaşım, adımların tekrarlanabilir ve anlaşılabilir olmasını sağlar (kaynak: `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/README.md`).
+
+**Seçilme motivasyonu:** AXI bus mimarisini öğrenmek, Xilinx FPGA geliştirmede en kritik becerilerden biridir. Mevcut kaynaklar (Xilinx docs, blog yazıları) genellikle GUI tabanlı ve monolitik — kademeli CLI-first yaklaşım bu boşluğu doldurur.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **Eğitim boşluğu:** AXI bus mimarisini kademeli öğreten, TCL tabanlı, tekrarlanabilir bir kaynak mevcut değil.
+2. **CLI-first değer önerisi:** GUI ile yapılan adımlar kaybolur, tekrarlanamaz. TCL script = çalıştırılabilir dokümantasyon.
+3. **Pratik odaklılık:** Her seviye bağımsız sentezlenip doğrulanabilir — öğrenci ilerlemeyi somut görebilir.
+4. **Board seçimi:** Nexys Video (Artix-7 200T) geniş kaynak alanı sağlar, gelecekte DDR3, HDMI gibi ileri örnekler eklenebilir.
+
+**Priority gerekçesi:** `must` — Projenin varlık sebebi.
+
+---
+
+### AXI-REQ-L1-001: I/O Periferikleri Alt Sistemi
+
+```yaml
+req_id: AXI-REQ-L1-001
+level: L1
+type: functional
+priority: must
+parent: AXI-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "AXI GPIO IP v2.0 ile 8-bit LED çıkışı kontrol edilir"
+  - "Standalone modda GPIO IP'nin AXI arayüzü tie-off edilir"
+  - "MicroBlaze modunda GPIO IP, AXI Interconnect üzerinden erişilir"
+  - "0x40000000 adresine yazılan değer LED'lerde görünür"
+
+constraints:
+  - type: ip
+    spec: "Xilinx AXI GPIO v2.0, C_GPIO_WIDTH=8, C_ALL_OUTPUTS=1"
+  - type: pin
+    spec: "LED[0:7] → T14, T15, T16, U16, V15, W16, W15, Y13 (LVCMOS25)"
+  - type: address
+    spec: "0x40000000 - 0x4000FFFF (64 KB)"
+```
+
+**Neden bu gereksinim var:**
+GPIO, AXI protokolünü öğrenmenin en basit yoludur. Tek register yazarak LED kontrolü yapılabilir. Standalone mod (tie-off), AXI sinyallerinin ne işe yaradığını gösterir. MicroBlaze mod, gerçek bir SoC'deki periferik erişimini gösterir.
+
+**Seçilme motivasyonu:** LED kontrolü, FPGA'da en temel ve görsel olarak doğrulanabilir çıktıdır. AXI GPIO, minimum karmaşıklıkla AXI protokolünü somutlaştırır — öğrenci register yazarak LED'lerin yandığını görebilir.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **Görsel doğrulama:** LED çıkışı, osiloskop veya logic analyzer gerekmeden doğrulanabilir.
+2. **Minimal karmaşıklık:** AXI GPIO tek register yazma ile çalışır — AXI protokolünün en basit kullanımı.
+3. **İki mod:** Standalone (tie-off) AXI sinyallerini öğretir, MicroBlaze mod gerçek SoC kullanımını gösterir.
+
+**Priority gerekçesi:** `must` — Her iki alt örneğin temel çıkış periferali.
+
+---
+
+### AXI-REQ-L1-002: İşleme Alt Sistemi (Processing)
+
+```yaml
+req_id: AXI-REQ-L1-002
+level: L1
+type: functional
+priority: must
+parent: AXI-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "MicroBlaze v11.0 soft işlemci çalışır"
+  - "AXI Master portu ile periferiklere erişim sağlanır"
+  - "8 KB LMB BRAM ile instruction/data depolanır"
+  - "JTAG üzerinden program yüklenebilir"
+
+constraints:
+  - type: processor
+    spec: "MicroBlaze v11.0, 32-bit RISC, debug enabled, D_AXI=1"
+  - type: memory
+    spec: "8 KB LMB BRAM (shared I+D)"
+  - type: bus
+    spec: "AXI4-Lite via AXI Interconnect v2.1 (1M × 1S)"
+```
+
+**Neden bu gereksinim var:**
+MicroBlaze, Xilinx SoC mimarisini öğrenmenin anahtarıdır. Soft işlemci ile AXI master → interconnect → slave veri yolu hiyerarşisi canlı olarak gözlemlenir. 8 KB BRAM, minimal alan kullanımı ile yeterli test kodu çalıştırır (LED toggle, register read/write).
+
+**Seçilme motivasyonu:** MicroBlaze, AXI master rolünü somutlaştırır. Yazılımdan register yazarak periferik kontrolü, AXI protokolünün gerçek kullanım senaryosunu gösterir.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **AXI master kavramı:** MicroBlaze olmadan AXI master olmaz — kimin bus'a yazacağı belirsiz kalır.
+2. **Block Automation:** Vivado'nun `apply_bd_automation` komutu, MicroBlaze etrafında otomatik LMB, reset, debug oluşturur — bu öğretici.
+3. **C programlama:** Yazılımla register erişimi, RTL'den çok daha sezgisel — öğrenci AXI'yı abstrakte etmeden anlar.
+
+**Priority gerekçesi:** `must` — AXI bus öğrenmenin ikinci kademesi (GPIO sonrası).
+
+---
+
+### AXI-REQ-L1-003: Altyapı Alt Sistemi (Infrastructure)
+
+```yaml
+req_id: AXI-REQ-L1-003
+level: L1
+type: functional
+priority: must
+parent: AXI-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "100 MHz PLL/MMCM ile stabil clock üretilir"
+  - "Clock lock sinyali ile senkronize reset dağıtılır"
+  - "8 KB dual-port BRAM instruction ve data için paylaşılır"
+  - "JTAG debug modülü (MDM) erişim sağlar"
+
+constraints:
+  - type: clock
+    spec: "Clock Wizard v6.0, 100 MHz input (R4, LVCMOS33 veya LVDS), 100 MHz output"
+  - type: reset
+    spec: "Processor System Reset v5.0, ext_reset ← G4 (active-low)"
+  - type: memory
+    spec: "Block Memory Generator v8.4, 8 KB true dual-port"
+  - type: debug
+    spec: "MDM v3.2, JTAG + UART"
+```
+
+**Neden bu gereksinim var:**
+Clock, reset ve bellek her FPGA tasarımının iskeletidir. Eğitim projesinde bile bunlar mevcut olmalıdır çünkü MicroBlaze bunlar olmadan çalışmaz.
+
+**Seçilme motivasyonu:** Altyapı bileşenleri, her FPGA SoC tasarımının zorunlu temelidir. Eğitim projesinde bunları açıkça göstermek, öğrenciye "MicroBlaze neden böyle bir altyapı gerektirir?" sorusunu yanıtlar.
+
+**Priority gerekçesi:** `must` — Altyapı olmadan MicroBlaze başlatılamaz.
+
+---
+
+### AXI-REQ-L1-004: Otomasyon/Build Alt Sistemi
+
+```yaml
+req_id: AXI-REQ-L1-004
+level: L1
+type: non-functional
+priority: must
+parent: AXI-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "create_axi_simple_gpio.tcl → standalone GPIO projesi oluşturur (~8 saniye)"
+  - "create_minimal_microblaze.tcl → minimal MicroBlaze BD oluşturur (~20 saniye)"
+  - "add_axi_gpio.tcl → mevcut projeye GPIO ekler (~10 saniye)"
+  - "run_synthesis.tcl → sentez başlatır ve rapor üretir (~4 dakika)"
+  - "Tüm script'ler vivado -mode batch ile çalışır"
+
+constraints:
+  - type: tool
+    spec: "Vivado 2025.1, TCL batch mode"
+  - type: script_count
+    spec: "4 çalışan script (create_simple + create_mb + add_gpio + synth)"
+  - type: reproducibility
+    spec: "Aynı Vivado versiyonunda deterministik sonuç"
+```
+
+**Neden bu gereksinim var:**
+CLI-first metodoloji bu projenin temel değer önerisidir. GUI ile yapılan tasarım adımları kaybolabilir, tekrarlanamaz ve öğretilemez (kaynak: `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/README.md`).
+
+**Seçilme motivasyonu:** TCL script'ler, Vivado GUI'sinin arkasındaki API'yi doğrudan kullanır. Öğrenci script'i okuyarak `create_bd_cell`, `apply_bd_automation`, `assign_bd_address` gibi komutları öğrenir — bu bilgi, GUI bilgisinden daha transfer edilebilirdir.
+
+**Priority gerekçesi:** `must` — CLI-first projenin temel metodolojisi.
+
+---
+
+### AXI-REQ-L1-005: Sinyal Yolu Alt Sistemi (Signal Path) [v2.0 YENİ]
+
+```yaml
+req_id: AXI-REQ-L1-005
+level: L1
+type: functional
+priority: must
+parent: AXI-REQ-L0-001
+status: active
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "Clock dağıtımı: clk_wiz → BUFG → MicroBlaze + AXI fabric + peripherals"
+  - "Reset zinciri: ext_reset (G4) → proc_sys_reset → peripheral_aresetn + mb_reset"
+  - "PLL lock kontrolü: clk_wiz.locked → proc_sys_reset.dcm_locked"
+  - "AXI-Lite handshake: MicroBlaze M_AXI_DP → AXI Interconnect → GPIO s_axi"
+  - "Standalone modda AXI tie-off: awvalid=0, arvalid=0, wvalid=0, bready=1, rready=1"
+
+constraints:
+  - type: protocol
+    spec: "AXI4-Lite: awvalid/awready, wvalid/wready, bvalid/bready, arvalid/arready, rvalid/rready"
+  - type: reset
+    spec: "Active-low reset (aresetn), board reset G4 (LVCMOS15, active-low)"
+  - type: clock
+    spec: "Tek clock domain: 100 MHz (PLL stabilized)"
+```
+
+**Neden bu gereksinim var:**
+Eğitim projesinde sinyal yolunun açıkça belgelenmesi, öğrencinin "sinyaller nereye gidiyor?" sorusunu yanıtlar:
+
+1. **Clock dağıtımı:** Tek clock domain (100 MHz) olmasına rağmen, PLL/MMCM → BUFG → fabric zinciri öğretici.
+2. **Reset sıralaması:** PLL locked olmadan reset bırakılmaz — bu, tüm FPGA tasarımlarında geçerli temel prensip.
+3. **AXI-Lite handshake:** Standalone modda AXI sinyallerinin tie-off edilmesi (kaynak: `axi_gpio_wrapper.v:18-31` — SDOC-B-001), AXI protokolünün sinyal seviyesinde anlaşılmasını sağlar.
+4. **MicroBlaze → Interconnect → GPIO:** AXI master-slave ilişkisinin sinyal akışı.
+
+**Seçilme motivasyonu:** AXI protokolü sinyal seviyesinde anlaşılmadan gerçek SoC tasarımı yapılamaz. Bu ister, öğrenciye sinyal akışını takip etme becerisi kazandırır.
+
+**Neden bu gereksinim seçildi (detaylı):**
+1. **AXI tie-off pattern:** `awvalid=0, arvalid=0` diyerek "bus'a hiç istek gönderme" kavramını somutlaştırır.
+2. **Reset zinciri:** PLL lock → reset release sıralaması, her FPGA tasarımında geçerli temel prensip.
+3. **Single clock simplicity:** Tek clock domain, CDC karmaşıklığı olmadan sinyal akışına odaklanmayı sağlar.
+
+**Priority gerekçesi:** `must` — Sinyal yolu anlayışı olmadan AXI protokolü öğrenilemez.
+
+---
+
+### L2 İsterleri
+
+#### AXI-REQ-L2-001: AXI GPIO Wrapper (Standalone)
+
+```yaml
+req_id: AXI-REQ-L2-001
+level: L2
+type: functional
+priority: should
+parent: AXI-REQ-L1-001
+status: active
+implementing_component: axi_gpio_wrapper
+source_file: vivado_axi_simple/axi_gpio_wrapper.v
+source_doc: SDOC-B-001
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "AXI GPIO IP sarmalanır, GPIO I/O portları üst seviyeye çıkarılır"
+  - "AXI handshake sinyalleri deassert edilir (awvalid=0, arvalid=0, wvalid=0)"
+  - "Bready=1 ve rready=1 ile slave response'lar kabul edilir"
+  - "gpio_io_i ← switches[7:0], gpio_io_o → leds[7:0]"
+
+constraints:
+  - type: interface
+    spec: "AXI-Lite slave (tüm portlar tie-off)"
+  - type: data_width
+    spec: "8-bit GPIO giriş/çıkış"
+```
+
+**Neden bu modül var:**
+AXI GPIO IP'nin MicroBlaze olmadan nasıl instantiate edileceğini gösterir. AXI sinyallerinin tie-off edilmesi, öğrenciye AXI handshake mekanizmasını tanıtır (kaynak: `axi_gpio_wrapper.v:18-31` — `s_axi_awvalid = 1'b0`, `s_axi_bready = 1'b1`).
+
+**Seçilme motivasyonu:** AXI protokolünü sinyal seviyesinde anlamanın en etkili yolu, tüm sinyalleri tek tek bağlamaktır. Wrapper modülü, her sinyalin ne işe yaradığını görsel olarak gösterir.
+
+**Priority gerekçesi:** `should` — Eğitimsel değeri yüksek ama MicroBlaze örneği zaten GPIO'yu kapsar.
+
+---
+
+#### AXI-REQ-L2-002: Basit Test Sayacı (simple_top)
+
+```yaml
+req_id: AXI-REQ-L2-002
+level: L2
+type: functional
+priority: could
+parent: AXI-REQ-L1-001
+status: planned
+implementing_component: simple_top
+source_file: "[MISSING_IN_WORKSPACE] simple_working/simple_project.srcs/sources_1/new/simple_top.v"
+source_doc: SDOC-B-002
+confidence: MEDIUM
+version: 1
+last_updated: 2026-02-23
+# PARSE_UNCERTAIN: simple_top kaynak dosyası mevcut workspace'te bulunamadı.
+# Bu ister eğitim hedefi olarak korunmuştur, ancak implementasyon kanıtı eksiktir.
+
+acceptance_criteria:
+  - "4-bit counter her clock cycle'da 1 artar"
+  - "Senkron reset ile sayaç sıfırlanır"
+  - "Vivado sentez doğrulaması geçer"
+
+constraints:
+  - type: data_width
+    spec: "4-bit LED çıkışı"
+  - type: timing
+    spec: "100 MHz clock"
+```
+
+**Neden bu modül var:**
+Vivado toolchain doğrulaması için minimum test modülü olarak tasarlanmıştır. Ancak `simple_top.v` mevcut workspace'te bulunamadığı için bu gerekçe **PARSE_UNCERTAIN** olarak işaretlenmiştir ve doğrudan doğrulanamamıştır.
+
+**Seçilme motivasyonu:** AXI karmaşıklığı olmadan "Vivado çalışıyor mu?" sorusuna hızlı cevap verme hedefidir. Mevcut durumda bu motivasyon doküman bazlı korunmuş, kod kanıtı eksik olduğu için `planned` statüsüne çekilmiştir.
+
+**Priority gerekçesi:** `could` — Toolchain testi için kullanışlı ama projenin amacına doğrudan katkısı yok.
+
+---
+
+#### AXI-REQ-L2-003: Clock Wizard
+
+```yaml
+req_id: AXI-REQ-L2-003
+level: L2
+type: functional
+priority: must
+parent: AXI-REQ-L1-003
+status: active
+implementing_component: clk_wiz_1 (axi_gpio_bd) / clk_wiz_0 (minimal_mb)
+source_file: create_minimal_microblaze.tcl, axi_gpio_bd.bd
+source_doc: SDOC-B-006, SDOC-B-003
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "100 MHz harici clock girişinden 100 MHz stabil PLL/MMCM çıkışı üretilir"
+  - "locked sinyali reset controller'a bağlanır"
+  - "Single-ended (LVCMOS33, R4) veya differential (LVDS, R4/T4) giriş desteklenir"
+
+constraints:
+  - type: ip
+    spec: "Xilinx Clocking Wizard v6.0"
+  - type: input
+    spec: "Nexys Video: R4 (100 MHz), iki XDC varyantı (SE ve diff)"
+  - type: output
+    spec: "100 MHz (tek çıkış)"
+```
+
+**Neden 100 MHz → 100 MHz dönüşüm:**
+Harici osilatörün doğrudan fabric'e bağlanması yerine PLL/MMCM kullanılmasının sebebi: (1) jitter temizleme, (2) clock distribution tree'nin BUFG üzerinden düzgün çalışması, (3) locked sinyali ile PLL stabil olduğunda reset bırakılması.
+
+**Seçilme motivasyonu:** "Clock wizard neden gerekli?" sorusuna pratik cevap — aynı frekans bile olsa PLL stabilizasyonu ve BUFG dağıtımı gereklidir. Bu eğitim açısından önemli bir kavram.
+
+**Priority gerekçesi:** `must` — MicroBlaze ve AXI fabric stabil clock olmadan çalışamaz.
+
+---
+
+#### AXI-REQ-L2-004: LMB Bellek Hiyerarşisi
+
+```yaml
+req_id: AXI-REQ-L2-004
+level: L2
+type: functional
+priority: must
+parent: AXI-REQ-L1-003
+status: active
+implementing_component: lmb_bram_0, dlmb_v10, ilmb_v10, dlmb_bram_if_cntlr, ilmb_bram_if_cntlr
+source_file: create_minimal_microblaze.tcl (block automation)
+source_doc: SDOC-B-006
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "8 KB dual-port BRAM instruction ve data memory için paylaşılır"
+  - "LMB data bus ve LMB instruction bus ayrı ayrı çalışır"
+  - "Block Automation ile otomatik oluşturulur"
+
+constraints:
+  - type: ip
+    spec: "LMB v10 v3.0 (×2), LMB BRAM If Cntlr v4.0 (×2), Block Memory Generator v8.4"
+  - type: memory_size
+    spec: "8 KB (Block Automation default)"
+```
+
+**Neden 8 KB:**
+Xilinx Block Automation minimum 8 KB destekler. Bu, Artix-7'de 2 BRAM36 bloğuna karşılık gelir (%0.55 kullanım). Basit C programları (LED toggle, register test) için yeterlidir.
+
+**Seçilme motivasyonu:** Block Automation default değeri olan 8 KB, eğitim projesi için ideal — minimal BRAM tüketimi ile yeterli program alanı sağlar.
+
+**Priority gerekçesi:** `must` — MicroBlaze code/data belleği olmadan çalışmaz.
+
+---
+
+#### AXI-REQ-L2-005: AXI Interconnect
+
+```yaml
+req_id: AXI-REQ-L2-005
+level: L2
+type: functional
+priority: must
+parent: AXI-REQ-L1-002
+status: active
+implementing_component: microblaze_0_axi_periph
+source_file: add_axi_gpio.tcl
+source_doc: SDOC-B-007
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "1 Master (MicroBlaze M_AXI_DP) × 1 Slave (AXI GPIO) konfigürasyonunda çalışır"
+  - "AXI4-Lite protokolü ile adres decode yapılır"
+  - "0x40000000 adresi GPIO'ya yönlendirilir"
+
+constraints:
+  - type: ip
+    spec: "AXI Interconnect v2.1 (1M × 1S)"
+  - type: protocol
+    spec: "AXI4-Lite"
+  - type: address
+    spec: "0x40000000 - 0x4000FFFF → AXI GPIO"
+```
+
+**Neden AXI Interconnect var (1M×1S bile):**
+Tek slave olsa bile MicroBlaze'in M_AXI_DP portu doğrudan GPIO'ya bağlanamaz — address decode, protocol conversion ve clock/reset distribution gerekir (kaynak: `add_axi_gpio.tcl` — `assign_bd_address` komutu).
+
+**Seçilme motivasyonu:** AXI Interconnect'in neden gerekli olduğunu anlamak, AXI eğitiminin kritik bir parçasıdır.
+
+**Priority gerekçesi:** `must` — MicroBlaze → GPIO veri yolu bu olmadan kurulamaz.
+
+---
+
+#### AXI-REQ-L2-006: Reset Controller
+
+```yaml
+req_id: AXI-REQ-L2-006
+level: L2
+type: functional
+priority: must
+parent: AXI-REQ-L1-003
+status: active
+implementing_component: rst_clk_wiz_1_100M
+source_file: create_minimal_microblaze.tcl
+source_doc: SDOC-B-006
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "Clock Wizard locked → dcm_locked bağlantısı ile PLL stabil kontrolü yapılır"
+  - "peripheral_aresetn (active-low) AXI periferiklere dağıtılır"
+  - "mb_reset MicroBlaze'e bağlanır"
+  - "Harici reset butonu (G4, active-low) desteklenir"
+
+constraints:
+  - type: ip
+    spec: "Processor System Reset v5.0"
+  - type: signal
+    spec: "ext_reset_in ← board reset, dcm_locked ← clk_wiz locked"
+```
+
+**Neden önemli:**
+PLL lock olmadan reset bırakılırsa MicroBlaze undefined state'de başlar. Reset controller, clock stabil olduğunda belirli bir hold süresinden sonra reset'i bırakır (kaynak: `create_minimal_microblaze.tcl` — proc_sys_reset bağlantıları).
+
+**Seçilme motivasyonu:** Reset sıralaması (PLL lock → reset release) her FPGA tasarımında zorunlu temel prensiptir. Eğitim projesinde bunu açıkça göstermek öğretici değer taşır.
+
+**Priority gerekçesi:** `must` — Güvenilir başlatma için zorunlu.
+
+---
+
+#### AXI-REQ-L2-007: MicroBlaze Debug Module (MDM)
+
+```yaml
+req_id: AXI-REQ-L2-007
+level: L2
+type: functional
+priority: should
+parent: AXI-REQ-L1-003
+status: active
+implementing_component: mdm_1
+source_file: create_minimal_microblaze.tcl
+source_doc: SDOC-B-006
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+
+acceptance_criteria:
+  - "JTAG üzerinden MicroBlaze debug erişimi sağlanır"
+  - "MDM UART aktiftir (seri konsol)"
+  - "Vitis/SDK'dan program yükleme ve breakpoint desteği çalışır"
+
+constraints:
+  - type: ip
+    spec: "MDM v3.2, C_USE_UART=1"
+  - type: interface
+    spec: "MBDEBUG_0 ↔ MicroBlaze DEBUG, UART ↔ external (XDC'de pin tanımlı)"
+```
+
+**Neden UART da var:**
+MDM'in UART'ı, harici UART IP (UARTLite) olmadan basit printf debug sağlar.
+
+**Seçilme motivasyonu:** MDM UART, ek IP kullanmadan seri konsol sağlar — eğitim projesinde karmaşıklığı azaltır.
+
+**Priority gerekçesi:** `should` — Sistem MDM olmadan çalışır ama program yüklenemez.
+
+---
+
+## 5.3 Decision Kayıtları (axi_example)
+
+### AXI-DEC-001: CLI-First (TCL Batch) Metodolojisi
+
+```yaml
+decision_id: AXI-DEC-001
+title: "Proje oluşturma ve yönetimi için CLI-first yaklaşım"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - AXI-REQ-L1-004
+  - AXI-REQ-L0-001
+
+chosen_option: "TCL batch mode (vivado -mode batch -source script.tcl)"
+
+alternatives:
+  - option: "Vivado GUI ile interaktif tasarım"
+    rejected_because: >
+      GUI adımları tekrarlanamaz — "hangi butona basıldı?" kaybolur.
+      Eğitim projesinde her adımın açık olması gerekir. CI/CD
+      entegrasyonu imkansız.
+  - option: "Makefile + partial TCL"
+    rejected_because: >
+      Vivado'nun kendi batch mode'u doğrudan Tcl source komutuyla çalışır.
+      Make katmanı gereksiz karmaşıklık ekler.
+  - option: "Python (pyvivado / fusesoc)"
+    rejected_because: >
+      Ek bağımlılık. Vivado native olarak TCL destekliyor.
+
+consequences:
+  - "Her adım script olarak kaydedilir → versiyon kontrolü mümkün"
+  - "~8-20 saniyede proje oluşturma (GUI'de 5-10 dakika)"
+  - "Hata durumunda script düzenlenir ve tekrar çalıştırılır"
+```
+
+### AXI-DEC-002: Kademeli Öğrenme Yaklaşımı (3 Seviye)
+
+```yaml
+decision_id: AXI-DEC-002
+title: "Eğitim örneklerinin kademeli yapılandırılması"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - AXI-REQ-L0-001
+  - AXI-REQ-L1-001
+  - AXI-REQ-L1-002
+
+chosen_option: "Seviye 1: Standalone GPIO → Seviye 2: Minimal MicroBlaze → Seviye 3: MicroBlaze + AXI GPIO"
+
+alternatives:
+  - option: "Tek monolitik örnek (tam MicroBlaze + GPIO + UART + DDR)"
+    rejected_because: >
+      Karmaşıklık çok yüksek. DMA-Audio projesinin BD'si 745 satırlık
+      TCL — yeni başlayan biri bunu anlayamaz.
+  - option: "AXI waveform seviyesinde başlama"
+    rejected_because: >
+      Çok düşük seviye. Pratik değeri düşük.
+  - option: "Zynq PS tabanlı öğretim"
+    rejected_because: >
+      Nexys Video'da Zynq yok. Ayrıca Zynq AXI'yı "bedava" verir.
+
+consequences:
+  - "Her seviyenin bağımsız TCL scripti var"
+  - "Seviye 2 çıktısı, Seviye 3'ün girdisi olabilir"
+  - "Öğrenci her seviyede durup sentez yapıp doğrulayabilir"
+```
+
+### AXI-DEC-003: MicroBlaze v11.0 Seçimi
+
+```yaml
+decision_id: AXI-DEC-003
+title: "Soft işlemci olarak MicroBlaze v11.0 seçimi"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - AXI-REQ-L1-002
+
+chosen_option: "MicroBlaze v11.0 (Vivado 2025.1 default)"
+
+alternatives:
+  - option: "RISC-V soft core (VexRiscv, PicoRV32, NEORV32)"
+    rejected_because: >
+      Vivado Block Automation RISC-V desteklemiyor. LMB, AXI Interconnect,
+      Reset Controller, MDM otomatik oluşturulamaz.
+  - option: "Zynq PS (ARM Cortex-A9)"
+    rejected_because: >
+      Nexys Video'da Zynq yok.
+  - option: "MicroBlaze v10.0 (eski versiyon)"
+    rejected_because: >
+      Vivado 2025.1'de v10.0 deprecated olabilir.
+
+consequences:
+  - "Block Automation tam destek"
+  - "~1000 LUT kullanım (xc7a200t'nin %0.7'si)"
+  - "Vitis/SDK ile C programlama mümkün"
+```
+
+### AXI-DEC-004: 8 KB LMB BRAM Bellek Boyutu
+
+```yaml
+decision_id: AXI-DEC-004
+title: "MicroBlaze local memory boyutu 8 KB olarak belirlenmesi"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - AXI-REQ-L2-004
+
+chosen_option: "8 KB shared BRAM (instruction + data)"
+
+alternatives:
+  - option: "32 KB veya 64 KB LMB BRAM"
+    rejected_because: >
+      Eğitim projesi için gereksiz BRAM tüketimi.
+  - option: "4 KB"
+    rejected_because: >
+      Xilinx Block Automation minimum 8 KB destekliyor.
+  - option: "DDR bellek (MIG)"
+    rejected_because: >
+      MIG IP çok karmaşık. Eğitim odağını kaydırır.
+
+consequences:
+  - "Sadece 2 BRAM bloğu (%0.55)"
+  - "DDR gerekmeyen basit test programları için yeterli"
+```
+
+### AXI-DEC-005: Nexys Video Board Seçimi
+
+```yaml
+decision_id: AXI-DEC-005
+title: "Hedef board olarak Nexys Video (Artix-7 200T) seçimi"
+confidence: HIGH
+version: 1
+last_updated: 2026-02-23
+related_requirements:
+  - AXI-REQ-L0-001
+
+chosen_option: "Digilent Nexys Video (xc7a200tsbg484-1)"
+
+alternatives:
+  - option: "Nexys A7-100T"
+    rejected_because: >
+      Daha küçük FPGA. Nexys Video'nun HDMI, Ethernet, DDR3 gibi zengin
+      I/O'ları gelecekte daha karmaşık örnekler eklemeye olanak tanır.
+  - option: "Basys 3 (Artix-7 35T)"
+    rejected_because: >
+      Çok küçük — genişleme alanı sınırlı.
+  - option: "ZedBoard / PYNQ (Zynq tabanlı)"
+    rejected_because: >
+      Zynq PS, AXI altyapısını "bedava" verir — öğrenci AXI'yı explicit
+      olarak kurmayı öğrenemez.
+
+consequences:
+  - "134,600 LUT, 365 BRAM — geniş genişleme alanı"
+  - "Differential clock (LVDS R4/T4) kullanılabilir"
+  - "~%1 kaynak kullanımı — çok fazla headroom"
+```
+
+---
+
+## 5.4 Metadata
+
+### 5.4.1 COMPONENT Node'ları (Zenginleştirilmiş)
+
+| ID | Type | Source | Parent L2 | Ports | Parameters |
+|----|------|--------|-----------|-------|------------|
+| `axi_gpio_wrapper` | RTL_Module | SDOC-B-001 | AXI-REQ-L2-001 | clk(in), resetn(in), switches[7:0](in), leds[7:0](out), s_axi_*(tie-off) | — |
+| `simple_top` | RTL_Module | SDOC-B-002 | AXI-REQ-L2-002 | clk(in), reset(in), led[3:0](out) | — |
+| `axi_gpio_0` | IP_Core | SDOC-B-003 | AXI-REQ-L1-001 | s_axi_*(AXI-Lite slave), gpio_io_o[7:0](out) | C_GPIO_WIDTH=8, C_ALL_OUTPUTS=1 |
+| `microblaze_0` | IP_Core | SDOC-B-003 | AXI-REQ-L1-002 | M_AXI_DP, DLMB, ILMB, DEBUG, Clk(in), Reset(in) | C_USE_ICACHE=0, C_USE_DCACHE=0, C_D_AXI=1 |
+| `microblaze_0_axi_periph` | IP_Core | SDOC-B-003 | AXI-REQ-L2-005 | S00_AXI(slave), M00_AXI(master) | NUM_SI=1, NUM_MI=1 |
+| `clk_wiz_1` | IP_Core | SDOC-B-003 | AXI-REQ-L2-003 | clk_in1(in), resetn(in), clk_out1(out 100MHz), locked(out) | CLKOUT1_FREQ=100 |
+| `rst_clk_wiz_1_100M` | IP_Core | SDOC-B-003 | AXI-REQ-L2-006 | slowest_sync_clk(in), ext_reset_in(in), dcm_locked(in), peripheral_aresetn(out), mb_reset(out) | — |
+| `mdm_1` | IP_Core | SDOC-B-003 | AXI-REQ-L2-007 | Debug(MBDEBUG_0), UART | C_USE_UART=1 |
+| `dlmb_v10` | IP_Core | SDOC-B-003 | AXI-REQ-L2-004 | LMB bus | — |
+| `ilmb_v10` | IP_Core | SDOC-B-003 | AXI-REQ-L2-004 | LMB bus | — |
+| `dlmb_bram_if_cntlr` | IP_Core | SDOC-B-003 | AXI-REQ-L2-004 | LMB port, BRAM port | — |
+| `ilmb_bram_if_cntlr` | IP_Core | SDOC-B-003 | AXI-REQ-L2-004 | LMB port, BRAM port | — |
+| `lmb_bram_0` | IP_Core | SDOC-B-003 | AXI-REQ-L2-004 | BRAM_PORTA, BRAM_PORTB | 8 KB |
+
+### 5.4.2 CONSTRAINT Node'ları
+
+| ID | Type | Spec | Kaynak |
+|----|------|------|--------|
+| `CONST-B-CLK-001` | clock | R4, 100 MHz, LVCMOS33, period 10 ns | SDOC-B-004 |
+| `CONST-B-CLK-002` | clock | R4(+)/T4(-), LVDS differential | SDOC-B-004 (BD variant) |
+| `CONST-B-PIN-RST` | pin | reset → G4 (LVCMOS15, active-low) | SDOC-B-004 |
+| `CONST-B-PIN-LED0` | pin | led[0] → T14 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-LED1` | pin | led[1] → T15 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-LED2` | pin | led[2] → T16 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-LED3` | pin | led[3] → U16 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-LED4` | pin | led[4] → V15 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-LED5` | pin | led[5] → W16 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-LED6` | pin | led[6] → W15 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-LED7` | pin | led[7] → Y13 (LVCMOS25) | SDOC-B-004 |
+| `CONST-B-PIN-SW0` | pin | switch[0] → E22 (LVCMOS12) | SDOC-B-004 |
+| `CONST-B-PIN-SW1-7` | pin | switch[1:7] → F21-M17 (LVCMOS12) | SDOC-B-004 |
+| `CONST-B-ADDR-001` | address | AXI GPIO: 0x40000000 (64 KB) | SDOC-B-007 |
+
+### 5.4.3 EVIDENCE Node'ları (Bağlam Boşlukları Doldurulmuş)
+
+| ID | Type | İçerik | Tam Kaynak Yolu |
+|----|------|--------|-----------------|
+| `EVID-B-001` | synthesis | LUT: 1412 (%1.05), Reg: 1285 (%0.48), BRAM: 2 (%0.55) | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/utilization_summary.txt` |
+| `EVID-B-002` | timing | WNS > 0 ns, 100 MHz timing met | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/SYNTHESIS_RESULTS.md` |
+| `EVID-B-003` | synthesis | DSP: 0, IO: 10/285, MMCM: 1/10, BUFG: 3/32 | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/utilization_summary.txt` |
+| `EVID-B-004` | build_time | BD: ~20s, GPIO add: ~10s, Synth: ~4min | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/SYNTHESIS_RESULTS.md` |
+| `EVID-B-005` | code | `axi_gpio_wrapper.v:18-31` — AXI tie-off pattern | `/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/vivado_axi_simple/axi_gpio_wrapper.v:18-31` |
+| `EVID-B-006` | code | `simple_top.v:8-10` — 4-bit counter, senkron reset (**PARSE_UNCERTAIN: dosya workspace'te yok**) | `[MISSING_IN_WORKSPACE] /Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/simple_working/simple_project.srcs/sources_1/new/simple_top.v:8-10` |
+
+### 5.4.4 ISSUE Node'ları (Tutarlı Severity Skalası)
+
+| ID | Severity | Açıklama | İlgili İster |
+|----|----------|----------|--------------|
+| `ISSUE-B-001` | **medium** | Clock override: XDC'de çift clock tanımı (`sys_clk_pin` overrides `sys_clock`) | AXI-REQ-L2-003 |
+| `ISSUE-B-002` | **low** | UART portları XDC'de tanımlı ama tasarımda yok (`usb_uart_rxd/txd`) | AXI-REQ-L2-007 |
+| `ISSUE-B-003` | **medium** | LMB clock mismatch (OOC synthesis) | AXI-REQ-L2-004 |
+| `ISSUE-B-004` | **info** | Testbench yok — doğrulama sadece sentez bazlı | — |
+| `ISSUE-B-005` | **info** | SDK/Vitis uygulaması yok — C kodu sadece dokümantasyonda örnek | AXI-REQ-L1-002 |
+| `ISSUE-B-006` | **low** | BD'de switch girişi kullanılmıyor (sadece LED çıkışı) | AXI-REQ-L1-001 |
+
+### 5.4.5 PATTERN Node'ları
+
+| ID | Pattern | Kullanım |
+|----|---------|----------|
+| `PAT-B-001` | **AXI Tie-Off:** awvalid=0, arvalid=0, wvalid=0, bready=1, rready=1 | axi_gpio_wrapper.v |
+| `PAT-B-002` | **Block Automation:** `apply_bd_automation -rule xilinx.com:bd_rule:microblaze` | create_minimal_microblaze.tcl |
+| `PAT-B-003` | **Iterative BD Build:** Minimal BD → IP ekle → bağla → sentezle | create_minimal_microblaze.tcl → add_axi_gpio.tcl |
+| `PAT-B-004` | **AXI Address Assignment:** `assign_bd_address` ile otomatik adres haritası | add_axi_gpio.tcl |
+
+---
+
+# 6. Edge Tanımları (Formalize Edilmiş)
+
+## 6.1 DECOMPOSES_TO Edge'leri
+
+### DMA-Audio Projesi
+
+```yaml
+edges:
+  # L0 → L1
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L0-001
+    to: DMA-REQ-L1-001
+    rationale: "Ses verisi bellekten ses çıkışına aktarılmalı — veri yolu alt sistemi bu sorumluluğu taşır"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L0-001
+    to: DMA-REQ-L1-002
+    rationale: "Kullanıcı arayüzü (butonlar, LED'ler) ve ses çıkışı (PWM) — dış dünya etkileşimi"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L0-001
+    to: DMA-REQ-L1-003
+    rationale: "DMA kontrolü, WAV parsing, mod yönetimi — yazılım kontrol katmanı"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L0-001
+    to: DMA-REQ-L1-004
+    rationale: "Clock, reset, bellek, debug — tüm bileşenlerin çalışması için zorunlu altyapı"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L0-001
+    to: DMA-REQ-L1-005
+    rationale: "TCL script ile proje yeniden oluşturma — tekrarlanabilirlik"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L0-001
+    to: DMA-REQ-L1-006
+    rationale: "Clock domain crossing, handshake, backpressure, interrupt routing — sinyal bütünlüğü"
+
+  # L1 → L2 (Data Path)
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-001
+    to: DMA-REQ-L2-001
+    rationale: "DMA çıktısını FIFO'ya dönüştüren ara katman — AXI-Stream ↔ FIFO protokol farkını çözer"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-001
+    to: DMA-REQ-L2-004
+    rationale: "Clock domain crossing — veri bütünlüğü için ayrı sorumluluk"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-001
+    to: DMA-REQ-L2-003
+    rationale: "DMA S2MM kanalına veri üreten kaynak — test ve doğrulama amaçlı"
+
+  # L1 → L2 (I/O)
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-002
+    to: DMA-REQ-L2-002
+    rationale: "PWM üretim donanımı — FIFO'dan gelen veriyi analog ses sinyaline dönüştürür"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-002
+    to: DMA-REQ-L2-005
+    rationale: "UART ile WAV dosyası alma ve oynatma — dosya aktarım protokolü"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-002
+    to: DMA-REQ-L2-006
+    rationale: "GPIO ile kullanıcı giriş/çıkış — buton, switch, LED kontrolü"
+
+  # L1 → L2 (Processing)
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-003
+    to: DMA-REQ-L2-007
+    rationale: "MicroBlaze üzerinde yazılımla ton üretimi — HW fallback"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-003
+    to: DMA-REQ-L2-011
+    rationale: "Interrupt birleştirme ve routing — çoklu kaynak yönetimi"
+
+  # L1 → L2 (Infrastructure)
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-004
+    to: DMA-REQ-L2-008
+    rationale: "Clock üretimi — 140.625 MHz (MIG) ve 24.576 MHz (audio)"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-004
+    to: DMA-REQ-L2-009
+    rationale: "Senkronize reset dağıtımı — MIG tabanlı"
+
+  - type: DECOMPOSES_TO
+    from: DMA-REQ-L1-004
+    to: DMA-REQ-L2-010
+    rationale: "JTAG debug erişimi — geliştirme desteği"
+```
+
+### axi_example Projesi
+
+```yaml
+edges:
+  # L0 → L1
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L0-001
+    to: AXI-REQ-L1-001
+    rationale: "GPIO ile LED kontrolü — AXI periferik erişiminin temel örneği"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L0-001
+    to: AXI-REQ-L1-002
+    rationale: "MicroBlaze ile AXI master → slave veri yolu hiyerarşisi"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L0-001
+    to: AXI-REQ-L1-003
+    rationale: "Clock, reset, bellek, debug — MicroBlaze için zorunlu altyapı"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L0-001
+    to: AXI-REQ-L1-004
+    rationale: "TCL batch mode ile tekrarlanabilir proje oluşturma — CLI-first metodoloji"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L0-001
+    to: AXI-REQ-L1-005
+    rationale: "AXI sinyal akışı, reset zinciri, clock dağıtımı — sinyal seviyesi anlayış"
+
+  # L1 → L2
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L1-001
+    to: AXI-REQ-L2-001
+    rationale: "Standalone GPIO wrapper — AXI tie-off ile sinyal seviyesi eğitim"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L1-001
+    to: AXI-REQ-L2-002
+    rationale: "Minimal counter — toolchain doğrulama"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L1-003
+    to: AXI-REQ-L2-003
+    rationale: "PLL/MMCM clock stabilizasyonu"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L1-003
+    to: AXI-REQ-L2-004
+    rationale: "LMB BRAM — MicroBlaze instruction/data memory"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L1-002
+    to: AXI-REQ-L2-005
+    rationale: "AXI Interconnect — master-slave bağlantı altyapısı"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L1-003
+    to: AXI-REQ-L2-006
+    rationale: "Senkronize reset dağıtımı — PLL lock tabanlı"
+
+  - type: DECOMPOSES_TO
+    from: AXI-REQ-L1-003
+    to: AXI-REQ-L2-007
+    rationale: "JTAG debug ve UART — geliştirme desteği"
+```
+
+## 6.2 MOTIVATED_BY Edge'leri
+
+```yaml
+edges:
+  # DMA-Audio Decision → Requirement
+  - type: MOTIVATED_BY
+    from: DMA-DEC-001
+    to: DMA-REQ-L1-002
+    detail: "PWM seçimi, board'daki SSM2377 amplifier kısıtından kaynaklanıyor"
+
+  - type: MOTIVATED_BY
+    from: DMA-DEC-002
+    to: DMA-REQ-L1-001
+    detail: "DMA mimarisi, ses verisi throughput gereksiniminden kaynaklanıyor"
+
+  - type: MOTIVATED_BY
+    from: DMA-DEC-002
+    to: DMA-REQ-L1-003
+    detail: "MicroBlaze seçimi, WAV parsing ve mod yönetimi karmaşıklığından kaynaklanıyor"
+
+  - type: MOTIVATED_BY
+    from: DMA-DEC-003
+    to: DMA-REQ-L2-004
+    detail: "Dual-clock FIFO seçimi, iki clock domain arasındaki CDC gereksiniminden kaynaklanıyor"
+
+  - type: MOTIVATED_BY
+    from: DMA-DEC-004
+    to: DMA-REQ-L2-002
+    detail: "8-bit çözünürlük, PWM carrier frekansının ses bandı üstünde kalması zorunluluğundan"
+
+  - type: MOTIVATED_BY
+    from: DMA-DEC-005
+    to: DMA-REQ-L2-011
+    detail: "Interrupt controller kurulup kullanılmaması, demo basitliği ile gelecek genişleme arasındaki denge"
+    confidence: MEDIUM  # PARSE_UNCERTAIN — tahmin bazlı
+
+  # axi_example Decision → Requirement
+  - type: MOTIVATED_BY
+    from: AXI-DEC-001
+    to: AXI-REQ-L1-004
+    detail: "CLI-first yaklaşım, eğitim tekrarlanabilirliği gereksiniminden kaynaklanıyor"
+
+  - type: MOTIVATED_BY
+    from: AXI-DEC-002
+    to: AXI-REQ-L0-001
+    detail: "Kademeli yapı, AXI öğrenme eğrisinin dikliğinden kaynaklanıyor"
+
+  - type: MOTIVATED_BY
+    from: AXI-DEC-003
+    to: AXI-REQ-L1-002
+    detail: "MicroBlaze v11.0, Block Automation tam desteği gereksiniminden kaynaklanıyor"
+
+  - type: MOTIVATED_BY
+    from: AXI-DEC-004
+    to: AXI-REQ-L2-004
+    detail: "8 KB BRAM, minimal kaynak kullanımı ile yeterli program alanı dengesi"
+
+  - type: MOTIVATED_BY
+    from: AXI-DEC-005
+    to: AXI-REQ-L0-001
+    detail: "Nexys Video seçimi, geniş kaynak alanı ve gelecek genişleme potansiyeli"
+```
+
+## 6.3 ALTERNATIVE_TO Edge'leri
+
+```yaml
+edges:
+  # DMA-Audio
+  - type: ALTERNATIVE_TO
+    decision: DMA-DEC-001
+    chosen: "FPGA dahili PWM + onboard SSM2377 amplifier"
+    rejected: "I2S DAC (Pmod I2S veya harici)"
+    rejection_reason: "Board'da I2S DAC çipi yok, ek donanım gerektirir"
+
+  - type: ALTERNATIVE_TO
+    decision: DMA-DEC-001
+    chosen: "FPGA dahili PWM + onboard SSM2377 amplifier"
+    rejected: "Sigma-Delta DAC (FPGA RTL)"
+    rejection_reason: "Board'daki analog filtre PWM için optimize — sigma-delta uyumsuz olabilir"
+
+  - type: ALTERNATIVE_TO
+    decision: DMA-DEC-002
+    chosen: "MicroBlaze + AXI DMA (simple mode)"
+    rejected: "Tamamen RTL tabanlı ses pipeline"
+    rejection_reason: "WAV parsing + UART + mod yönetimi RTL'de çok karmaşık (395 satır C vs binlerce satır Verilog)"
+
+  - type: ALTERNATIVE_TO
+    decision: DMA-DEC-002
+    chosen: "MicroBlaze + AXI DMA (simple mode)"
+    rejected: "CPU-driven memcpy"
+    rejection_reason: "Cache miss ve interrupt gecikmeleri ses kesintilerine neden olur"
+
+  - type: ALTERNATIVE_TO
+    decision: DMA-DEC-003
+    chosen: "Xilinx FIFO Generator IP (dual-clock)"
+    rejected: "Custom async FIFO (RTL gray-code)"
+    rejection_reason: "Metastabilite riski — silicon-validated IP daha güvenilir"
+
+  - type: ALTERNATIVE_TO
+    decision: DMA-DEC-004
+    chosen: "8-bit unsigned PWM"
+    rejected: "16-bit PWM"
+    rejection_reason: "24.576 MHz / 65536 = 375 Hz carrier — ses bandında, audible artifacts"
+
+  # axi_example
+  - type: ALTERNATIVE_TO
+    decision: AXI-DEC-001
+    chosen: "TCL batch mode"
+    rejected: "Vivado GUI"
+    rejection_reason: "GUI adımları tekrarlanamaz, CI/CD entegrasyonu imkansız"
+
+  - type: ALTERNATIVE_TO
+    decision: AXI-DEC-002
+    chosen: "3 seviyeli kademeli öğrenme"
+    rejected: "Tek monolitik örnek"
+    rejection_reason: "745 satırlık BD script yeni başlayan için anlaşılamaz"
+
+  - type: ALTERNATIVE_TO
+    decision: AXI-DEC-003
+    chosen: "MicroBlaze v11.0"
+    rejected: "RISC-V soft core"
+    rejection_reason: "Block Automation RISC-V desteklemiyor — manuel bağlantı debugging"
+
+  - type: ALTERNATIVE_TO
+    decision: AXI-DEC-005
+    chosen: "Nexys Video (Artix-7 200T)"
+    rejected: "Zynq tabanlı board"
+    rejection_reason: "Zynq AXI'yı bedava verir — öğrenci explicit kurulum öğrenemez"
+```
+
+---
+
+# 7. Karşılaştırma ve Fark Analizi
+
+## 7.1 İster Sayıları (Normalize Edilmiş — v2.0 güncellenmiş)
+
+| Seviye | DMA-Audio | axi_example | Fark |
+|--------|-----------|-------------|------|
+| L0 | 1 | 1 | — |
+| L1 (Veri Yolu) | 1 (DMA-REQ-L1-001) | — | DMA-Audio'ya özgü |
+| L1 (Sinyal Yolu) | 1 (DMA-REQ-L1-006) **YENİ** | 1 (AXI-REQ-L1-005) **YENİ** | Her ikisinde var |
+| L1 (I/O) | 1 (DMA-REQ-L1-002) | 1 (AXI-REQ-L1-001) | Her ikisinde var |
+| L1 (İşleme) | 1 (DMA-REQ-L1-003) | 1 (AXI-REQ-L1-002) | Her ikisinde var |
+| L1 (Altyapı) | 1 (DMA-REQ-L1-004) | 1 (AXI-REQ-L1-003) | Her ikisinde var |
+| L1 (Otomasyon) | 1 (DMA-REQ-L1-005) | 1 (AXI-REQ-L1-004) | Her ikisinde var |
+| **L1 Toplam** | **6** | **5** | DMA-Audio +1 (veri yolu) |
+| L2 | 11 | 7 | DMA-Audio daha derin |
+| **Genel Toplam** | **18** | **13** | DMA-Audio +5 |
+
+## 7.2 Karmaşıklık Karşılaştırması
+
+| Metrik | DMA-Audio | axi_example |
+|--------|-----------|-------------|
+| Custom RTL modülleri | 3 | 2 |
+| IP Core instance'ları | ~15 | ~13 |
+| Clock domain'leri | 3 | 1 |
+| AXI Interconnect topolojisi | 4S/1M + 1M/5S | 1M/1S |
+| Yazılım (C kodu) | 395 satır | Yok |
+| DDR bellek | Evet (MIG DDR2, 128 MB) | Hayır (8 KB BRAM) |
+| Interrupt altyapısı | Evet | Hayır |
+| Decision kayıtları | 5 | 5 |
+| ISSUE sayısı | 8 | 6 |
+| PATTERN sayısı | 6 | 4 |
+
+## 7.3 Projeler Arası Potansiyel Edge'ler (Çapraz Referans — Confidence Eklenmiş)
+
+| Edge Type | From | To | Açıklama | Confidence |
+|-----------|------|-----|----------|------------|
+| `ANALOGOUS_TO` | AXI:microblaze_0 | DMA:microblaze_0 | Aynı IP, farklı config (v11 vs v10, cache yok vs var) | HIGH |
+| `ANALOGOUS_TO` | AXI:clk_wiz_1 | DMA:clk_wiz_0 | Aynı IP, farklı output config (1 vs 2 çıkış) | HIGH |
+| `ANALOGOUS_TO` | AXI:rst_clk_wiz_1_100M | DMA:rst_mig_7series_0_81M | Aynı IP, farklı clock source (PLL vs MIG) | HIGH |
+| `ANALOGOUS_TO` | AXI:axi_gpio_0 | DMA:GPIO_OUT | Aynı IP, farklı width (8-bit vs 16-bit) | HIGH |
+| `REUSES_PATTERN` | AXI:PAT-B-002 | DMA (block automation) | Block Automation pattern her ikisinde | HIGH |
+| `INFORMED_BY` | AXI (eğitim) | DMA (uygulama) | axi_example öğrenilirse DMA-Audio anlaşılır | MEDIUM |
+| `CONTRADICTS` | AXI:microblaze_0 (v11.0) | DMA:microblaze_0 (v10.0) | MicroBlaze versiyon farkı — config tavsiyesi farklılaşabilir | MEDIUM |
+| `REUSES_PATTERN` | AXI:PAT-B-001 (AXI Tie-Off) | DMA:axis2fifo_0 (implicit tie-off) | axis2fifo'da kullanılmayan AXI sinyalleri benzer tie-off | MEDIUM |
+
+---
+
+# 8. Coverage Gap / Orphan Analizi
+
+## 8.1 DMA-Audio
+
+### Orphan Component Adayları
+| Component | Durum | Açıklama |
+|-----------|-------|----------|
+| `pwm_audio_bus` (Custom_Interface) | **Orphan değil** | DMA-REQ-L2-002'nin interface tanımı. Tip olarak COMPONENT değil INTERFACE olmalı — sınıflandırma düzeltmesi gerekli. |
+| `axi_interconnect_0` | **Beklenen orphan** | Kural 1.2'ye göre "AXI Interconnect hariç" — bu istisna belgelenmiştir. Infra bileşeni olarak DMA-REQ-L1-001'e atanmış. |
+| `microblaze_0_axi_periph` | **Beklenen orphan** | Kural 1.2'ye göre infra. DMA-REQ-L1-003'e atanmış. |
+| `xlconcat_0`, `xlconcat_1` | **Kapsam dahilinde** | DMA-REQ-L2-011 (Interrupt Controller) kapsamında. |
+
+### Coverage Gap Adayları
+| İster | Durum | Açıklama |
+|-------|-------|----------|
+| DMA-REQ-L1-006 (Signal Path) | **Yeni eklendi** | v1.0'da yoktu — v2.0'da eklenerek sinyal yolu coverage gap'i kapatıldı. |
+
+## 8.2 axi_example
+
+### Orphan Component Adayları
+| Component | Durum | Açıklama |
+|-----------|-------|----------|
+| Tüm component'lar atanmış | **Orphan yok** | — |
+
+### Coverage Gap Adayları
+| İster | Durum | Açıklama |
+|-------|-------|----------|
+| AXI-REQ-L2-002 (simple_top) | **Coverage gap (doğrulandı)** | `simple_top.v` dosyası workspace'te bulunamadı (`SDOC-B-002` PARSE_UNCERTAIN). İster `planned` durumuna çekildi, implementasyon kanıtı eksik. |
+| AXI-REQ-L1-005 (Signal Path) | **Yeni eklendi** | v1.0'da yoktu — v2.0'da eklenerek sinyal yolu coverage gap'i kapatıldı. |
+
+---
+
+# 9. Sorgu Örnekleri ve Yanıt Şablonları
+
+## 9.1 What Sorguları
+
+**Soru:** "DMA-Audio'da hangi clock domain'ler var?"
+**Beklenen Yanıt:**
+```
+3 clock domain mevcuttur:
+1. 100 MHz harici giriş (E3 pini) → clk_wiz_0 girişi [CONST-A-CLK-001]
+2. ~81 MHz MIG ui_clk → MicroBlaze, AXI fabric, DMA [CONST-A-CLK-004]
+3. 24.576 MHz audio clock → fifo2audpwm, FIFO rd_clk [CONST-A-CLK-003]
+
+Ek olarak 140.625 MHz MIG PHY reference clock üretilir [CONST-A-CLK-002]
+ama bu fabric'te doğrudan kullanılmaz, MIG iç kullanımıdır.
+
+Kaynak: DMA-REQ-L1-004, DMA-REQ-L2-008
+```
+
+## 9.2 Why Sorguları
+
+**Soru:** "Neden dual-clock FIFO kullanılmış?"
+**Beklenen Yanıt:**
+```
+DMA fabric clock'u (~81 MHz) ile audio PWM clock'u (24.576 MHz) farklıdır.
+İki clock domain arasında direkt veri geçirmek metastabilite riski taşır.
+
+Karar: DMA-DEC-003
+Reddedilen alternatifler:
+- Custom async FIFO → metastabilite riski [ALTERNATIVE_TO edge]
+- Tek clock domain → DDR2 MIG minimum ~81 MHz gerektirir [ALTERNATIVE_TO edge]
+- Handshake CDC → streaming veri için throughput yetersiz [ALTERNATIVE_TO edge]
+
+Seçilen: Xilinx FIFO Generator IP — silicon-validated, gray-code pointer
+senkronizasyonu ile güvenli CDC. [DMA-REQ-L2-004]
+```
+
+## 9.3 Trace Sorguları
+
+**Soru:** "tone_generator çalışmıyor — hangi issue'lar ilişkili?"
+**Beklenen Yanıt:**
+```
+ISSUE-A-002 (severity: high)
+- axis_tlast = 1'b1 hatası [EVID-A-003: tone_generator.v:69]
+- Yazılımda devre dışı [EVID-A-004: helloworld.c:386]
+- README'de belgelenmiş [EVID-A-008]
+- TODO yorumu mevcut [EVID-A-007: helloworld.c:194]
+
+İlgili İster: DMA-REQ-L2-003
+İlgili Decision: Bu modülün devre dışı bırakılma kararı PARSE_UNCERTAIN —
+mühendis açıkça belgelememiş. SW tone gen (DMA-REQ-L2-007) fallback olarak çalışıyor.
+```
+
+## 9.4 CrossRef Sorguları
+
+**Soru:** "axi_example'daki clock wizard, DMA-Audio'dakiyle nasıl farklı?"
+**Beklenen Yanıt:**
+```
+ANALOGOUS_TO edge (confidence: HIGH):
+AXI:clk_wiz_1 ↔ DMA:clk_wiz_0
+
+Farklar:
+| Özellik | DMA-Audio (clk_wiz_0) | axi_example (clk_wiz_1) |
+|---------|----------------------|------------------------|
+| Giriş | 100 MHz (E3, SE) | 100 MHz (R4, SE veya R4/T4 LVDS) |
+| Çıkış 1 | 140.625 MHz (MIG ref) | 100 MHz (fabric) |
+| Çıkış 2 | 24.576 MHz (audio) | — (tek çıkış) |
+| IP Versiyonu | Clocking Wizard v6.0 | Clocking Wizard v6.0 |
+
+Neden farklı: DMA-Audio çoklu clock domain gerektirir (DDR2 + audio).
+axi_example tek domain (100 MHz) — sadece jitter temizleme ve BUFG.
+```
+
+---
+
+# 10. Generic Şablon Doğrulama
+
+## 10.1 Şablon Uygulanabilirlik Sonuçları (v2.0 Güncellenmiş)
+
+| Kural | DMA-Audio Uyumu | axi_example Uyumu | Sonuç |
+|-------|-----------------|-------------------|-------|
+| L0 tek ister | Uygulandı | Uygulandı | Generic |
+| L1 sabit 6 eksen (sinyal yolu dahil) | 6/6 eksen tespit | 5/6 eksen tespit (veri yolu yok) | Generic |
+| L2: 1 component = 1 ister | 11 L2 / 18 component | 7 L2 / 13 component | Generic |
+| Constraint = ister DEĞİL | Doğru uygulandı | Doğru uygulandı | Generic |
+| Issue otomatik tespit | 8 issue | 6 issue | Generic |
+| Evidence otomatik tespit | 12 evidence | 6 evidence | Generic |
+| Decision mühendis girdisi | 5 decision (bazıları PARSE_UNCERTAIN) | 5 decision | Manuel gerekli |
+| Priority mühendis girdisi | Her ister için gerekçeli | Her ister için gerekçeli | Manuel gerekli |
+| Confidence etiketleri | Tüm node'larda | Tüm node'larda | Generic |
+| Signal path isterleri | DMA-REQ-L1-006 | AXI-REQ-L1-005 | Generic |
+| Seçilme motivasyonu | Tüm isterlerde | Tüm isterlerde | Manuel gerekli |
+
+## 10.2 Generic Otomasyon Oranı
+
+| Bileşen | Otomasyon | Not |
+|---------|-----------|-----|
+| Kaynak dosya tespiti | **%100** | Glob pattern ile otomatik |
+| Entity extraction | **%100** | Parse (HDL, TCL, XDC) |
+| L0 ister üretimi | **%70** | README + proje adı → taslak |
+| L1 kırınım (6 eksen) | **%90** | IP listesinden eksen tespiti |
+| L2 ister üretimi | **%85** | 1 component = 1 ister |
+| Acceptance criteria | **%50** | Port/param → kriter iskeleti |
+| Constraint node'lar | **%100** | XDC + BD adresleri parse |
+| Issue tespiti | **%90** | README pattern, kod TODO/FIXME |
+| Evidence tespiti | **%95** | Rapor dosyaları + kod referansları |
+| SOURCE_DOC node'lar | **%100** | Dosya taraması ile otomatik |
+| Signal path isterleri | **%70** | Port analizi + bağlantı tespiti |
+| Confidence ataması | **%80** | Kaynak tipi bazlı (code=HIGH, inference=MEDIUM) |
+| DECOMPOSES_TO edge'leri | **%90** | parent alanından otomatik |
+| **Decision kayıtları** | **%0** | **Tamamen mühendis girdisi** |
+| **"Neden" açıklamaları** | **%0** | **Tamamen mühendis girdisi** |
+| **Seçilme motivasyonu** | **%0** | **Tamamen mühendis girdisi** |
+| **Priority belirleme** | **%0** | **Tamamen mühendis girdisi** |
+
+**Genel Otomasyon: ~%65-70 (iskelet), %100 (mühendis tamamlamasıyla)**
+
+---
+
+## SONUÇ (v2.0)
+
+Bu doküman, RAG v2 mimarisinin Aşama 3 (İster Yükleme) çıktısının v2.0 güncellemesidir.
+
+### Sayısal Özet
+
+| Metrik | DMA-Audio | axi_example | Toplam |
+|--------|-----------|-------------|--------|
+| İsterler (L0+L1+L2) | 18 | 13 | **31** |
+| Decision kayıtları | 5 | 5 | **10** |
+| Component node'ları | 18 | 13 | **31** |
+| Constraint node'ları | 16 | 14 | **30** |
+| Evidence node'ları | 12 | 6 | **18** |
+| Issue node'ları | 8 | 6 | **14** |
+| Pattern node'ları | 6 | 4 | **10** |
+| SOURCE_DOC node'ları | 9 | 11 | **20** |
+| DECOMPOSES_TO edge'leri | 17 | 12 | **29** |
+| MOTIVATED_BY edge'leri | 6 | 5 | **11** |
+| ALTERNATIVE_TO edge'leri | 6 | 4 | **10** |
+| Çapraz referans edge'leri | — | — | **8** |
+
+### Gap Analizi Kapanma Durumu
+
+| Gap ID | Açıklama | Durum |
+|--------|----------|-------|
+| [1.1] | Confidence alanları | ✅ Tüm node'lara eklendi |
+| [1.2] | PARSE_UNCERTAIN etiketleri | ✅ DMA-DEC-005, DMA-REQ-L2-003, DMA-REQ-L2-011 |
+| [1.3] | Kaynak satır numaraları | ✅ Tamamlandı (tam dosya yolları ile) |
+| [1.4] | version/last_updated | ✅ Tüm YAML bloklarına eklendi |
+| [1.5] | DECOMPOSES_TO edge'leri | ✅ 29 edge formalize edildi |
+| [1.6] | MOTIVATED_BY edge'leri | ✅ 11 edge formalize edildi |
+| [1.7] | ALTERNATIVE_TO edge'leri | ✅ 10 edge formalize edildi |
+| [2.1] | Eşleştirme çıktı formatı | ⬜ Aşama 4'te yapılacak |
+| [2.2] | Coverage Gap / Orphan | ✅ Bölüm 8'de analiz edildi |
+| [2.3] | Component port/parametre | ✅ Tüm component tablolarına eklendi |
+| [3.1] | Çapraz referans confidence | ✅ Tüm edge'lere eklendi |
+| [3.2] | Cross-project pattern | ✅ 2 yeni edge eklendi (CONTRADICTS, REUSES_PATTERN) |
+| [4.1] | Graph DB şema uyumu | ⬜ Aşama 6'da yapılacak |
+| [4.2] | Vector embedding hazırlık | ⬜ Aşama 6'da yapılacak |
+| [5.1] | Sorgu örnekleri | ✅ 4 örnek eklendi (What/Why/Trace/CrossRef) |
+| [5.2] | Yanıt şablonu doğrulama | ✅ Örneklerle gösterildi |
+| [6.1] | ID çakışması | ✅ Proje prefixi eklendi (DMA-, AXI-) |
+| [6.2] | ISSUE severity skalası | ✅ 5 seviyeli tutarlı skala (critical/high/medium/low/info) |
+| [6.3] | PROJECT node | ✅ PROJECT-A, PROJECT-B tanımlandı |
+| [6.4] | SOURCE_DOC node | ✅ 20 SOURCE_DOC node tanımlandı |
+
+### Ek Kullanıcı Gereksinimleri Kapanma Durumu
+
+| Ek Gereksinim | Durum |
+|---------------|-------|
+| Signal Path isterleri | ✅ DMA-REQ-L1-006 ve AXI-REQ-L1-005 eklendi |
+| Evidence bağlam boşlukları | ✅ Tüm evidence'lara tam dosya yolları eklendi |
+| Seçilme motivasyonu | ✅ Tüm isterlere "Seçilme motivasyonu" paragrafı eklendi |
+| Detaylı "neden seçildi" | ✅ Tüm isterlere numaralı detaylı açıklama eklendi |
+
+---
+
+*RAG v2 prensibi: "LLM parse eder, eşleştirir, sunar — üretmez. Why bilgisinin tek güvenilir kaynağı mühendisin kendisidir."*
+*PARSE_UNCERTAIN etiketli çıkarımlar mühendis doğrulaması beklemektedir.*

@@ -1,0 +1,432 @@
+{
+  "stage": 5,
+  "generated_at": "2026-02-23T09:13:25Z",
+  "coverage_gap_requirements": [
+    "STAGE3:AXI-REQ-L2-002"
+  ],
+  "orphan_components": [],
+  "constraint_timing_contradictions": [
+    {
+      "issue_id": "PROJECT-A:ISSUE:fpga_part_inconsistency",
+      "severity": "critical",
+      "description": "Project name/board says 100T but Tcl config targets 50T.",
+      "provenance": {
+        "stage": 2,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/project_info.tcl",
+            "line": 4
+          },
+          {
+            "file": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/bd/design_1.tcl",
+            "line": 53
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      }
+    },
+    {
+      "issue_id": "PROJECT-B:ISSUE:duplicate_clock_constraints",
+      "severity": "medium",
+      "description": "Clock override warning indicates duplicate clock constraints.",
+      "provenance": {
+        "stage": 2,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/SYNTHESIS_RESULTS.md"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      }
+    },
+    {
+      "issue_id": "PROJECT-B:ISSUE:reset_polarity_conflict",
+      "severity": "medium",
+      "description": "sys_reset is declared ACTIVE_HIGH but connected to resetn pin.",
+      "provenance": {
+        "stage": 2,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/axi_example/create_axi_with_xdc.tcl"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      }
+    }
+  ],
+  "parse_uncertain_violations": [],
+  "cross_project_edge_count": 8,
+  "issue_link_edge_count": 4,
+  "stage5_derived_node_count": 1,
+  "stage5_derived_edge_count": 12,
+  "cross_project_edges": [
+    {
+      "id": "E:6b86a5e21a",
+      "edge_type": "ANALOGOUS_TO",
+      "source": "PROJECT-B:COMP:microblaze_0",
+      "target": "PROJECT-A:COMP:microblaze_0",
+      "attributes": {
+        "detail": "Same IP role, different project context/config",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:d19946fff2",
+      "edge_type": "ANALOGOUS_TO",
+      "source": "PROJECT-B:COMP:clk_wiz_0",
+      "target": "PROJECT-A:COMP:clk_wiz_0",
+      "attributes": {
+        "detail": "Same clock wizard family across projects",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:5e71a945d0",
+      "edge_type": "ANALOGOUS_TO",
+      "source": "PROJECT-B:COMP:rst_clk_wiz_0_100M",
+      "target": "PROJECT-A:COMP:rst_mig_7series_0_81M",
+      "attributes": {
+        "detail": "Reset controller role is analogous with different clock sources",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:1f4478743f",
+      "edge_type": "ANALOGOUS_TO",
+      "source": "PROJECT-B:COMP:axi_gpio_0",
+      "target": "PROJECT-A:COMP:GPIO_OUT",
+      "attributes": {
+        "detail": "GPIO control function is analogous across projects",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:15a0245d01",
+      "edge_type": "CONTRADICTS",
+      "source": "PROJECT-B:COMP:microblaze_0",
+      "target": "PROJECT-A:COMP:microblaze_0",
+      "attributes": {
+        "detail": "MicroBlaze version/config differs between educational AXI and DMA project",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "E:afb9e83768",
+      "edge_type": "REUSES_PATTERN",
+      "source": "PROJECT-B:PAT:axi_tie_off",
+      "target": "PROJECT-A:COMP:axis2fifo_0",
+      "attributes": {
+        "detail": "AXI tie-off behavior has an implicit analog in DMA axis2fifo path",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "E:581a7e73db",
+      "edge_type": "REUSES_PATTERN",
+      "source": "PROJECT-B:PAT:block_automation",
+      "target": "PROJECT-A:PAT:block_automation",
+      "attributes": {
+        "detail": "Block automation teaching pattern is reused conceptually",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "E:d917a1d28c",
+      "edge_type": "INFORMED_BY",
+      "source": "STAGE3:PROJECT-A",
+      "target": "STAGE3:PROJECT-B",
+      "attributes": {
+        "detail": "DMA application can be informed by axi_example educational baseline",
+        "origin": "stage5_cross_reference"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "7.3"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    }
+  ],
+  "issue_link_edges": [
+    {
+      "id": "E:b4186a1971",
+      "edge_type": "CONTRADICTS",
+      "source": "PROJECT-A:ISSUE:fpga_part_inconsistency",
+      "target": "STAGE3:DMA-REQ-L0-001",
+      "attributes": {
+        "reason": "Target FPGA part conflicts with project identity",
+        "origin": "stage5_issue_linkage"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "8 + issues"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "E:b238f84697",
+      "edge_type": "CONTRADICTS",
+      "source": "PROJECT-B:ISSUE:duplicate_clock_constraints",
+      "target": "STAGE3:AXI-REQ-L1-003",
+      "attributes": {
+        "reason": "Clock infra requirement is challenged by duplicate constraints",
+        "origin": "stage5_issue_linkage"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "8 + issues"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "E:e20b3059f0",
+      "edge_type": "CONTRADICTS",
+      "source": "PROJECT-B:ISSUE:reset_polarity_conflict",
+      "target": "STAGE3:AXI-REQ-L1-005",
+      "attributes": {
+        "reason": "Reset polarity mismatch impacts signal path integrity",
+        "origin": "stage5_issue_linkage"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "8 + issues"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    },
+    {
+      "id": "E:c4ade616f3",
+      "edge_type": "CONTRADICTS",
+      "source": "PROJECT-A:ISSUE:interrupts_disabled_in_sw",
+      "target": "STAGE3:DMA-DEC-005",
+      "attributes": {
+        "reason": "SW polling choice leaves interrupt infra under-used",
+        "origin": "stage5_issue_linkage"
+      },
+      "provenance": {
+        "stage": 5,
+        "sources": [
+          {
+            "file": "/Users/testpc1/Downloads/FPGA_RAG_ISTER_DOKUMANI_v2.txt",
+            "section": "8 + issues"
+          }
+        ],
+        "timestamp": "2026-02-23T09:13:25Z"
+      },
+      "confidence": "MEDIUM"
+    }
+  ],
+  "special_analyses": {
+    "dma_fpga_part_inconsistency": {
+      "verified": true,
+      "issue": {
+        "id": "PROJECT-A:ISSUE:fpga_part_inconsistency",
+        "node_type": "ISSUE",
+        "project_id": "PROJECT-A",
+        "name": "fpga_part_inconsistency",
+        "attributes": {
+          "severity": "critical",
+          "description": "Project name/board says 100T but Tcl config targets 50T.",
+          "actual_part": "xc7a50ticsg324-1L",
+          "expected_from_name": "xc7a100tcsg324-1"
+        },
+        "provenance": {
+          "stage": 2,
+          "sources": [
+            {
+              "file": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/project_info.tcl",
+              "line": 4
+            },
+            {
+              "file": "/Users/testpc1/Desktop/fpga_asist_dev-master/validation_test/Nexys-A7-100T-DMA-Audio/src/bd/design_1.tcl",
+              "line": 53
+            }
+          ],
+          "timestamp": "2026-02-23T09:13:25Z"
+        },
+        "confidence": "HIGH"
+      }
+    },
+    "tone_generator_parse_uncertain_evaluation": {
+      "requirement_id": "DMA-REQ-L2-003",
+      "has_parse_uncertain": true,
+      "document_confidence": "MEDIUM",
+      "expected_confidence_by_rule": "MEDIUM",
+      "assessment": "COMPLIANT"
+    },
+    "interrupt_usage_classification": {
+      "classification": "decision_with_residual_issue",
+      "reason": "Hardware interrupt path exists and is documented; software polling indicates design/implementation choice, not missing requirement node.",
+      "supporting_nodes": [
+        "STAGE3:DMA-REQ-L2-011",
+        "STAGE3:DMA-DEC-005",
+        "PROJECT-A:ISSUE:interrupts_disabled_in_sw"
+      ]
+    },
+    "axi_educational_pattern_sufficiency": {
+      "pattern_count": 3,
+      "markers": {
+        "AXI_TIE_OFF": true,
+        "BLOCK_AUTOMATION": true,
+        "signal_path_reset_clock": true
+      },
+      "is_sufficient": true,
+      "missing_markers": []
+    },
+    "signal_path_axis_coverage": {
+      "AXI-REQ-L1-005": {
+        "mapped_component_count": 20,
+        "mapped_components": [
+          "PROJECT-B:COMP:axi_bram",
+          "PROJECT-B:COMP:axi_bram_ctrl_0",
+          "PROJECT-B:COMP:axi_gpio_0",
+          "PROJECT-B:COMP:axi_gpio_wrapper",
+          "PROJECT-B:COMP:clk_wiz_0",
+          "PROJECT-B:COMP:dlmb_bram_if_cntlr",
+          "PROJECT-B:COMP:dlmb_v10",
+          "PROJECT-B:COMP:ilmb_bram_if_cntlr",
+          "PROJECT-B:COMP:ilmb_v10",
+          "PROJECT-B:COMP:leds",
+          "PROJECT-B:COMP:leds_8bits",
+          "PROJECT-B:COMP:lmb_bram",
+          "PROJECT-B:COMP:mdm_1",
+          "PROJECT-B:COMP:microblaze_0",
+          "PROJECT-B:COMP:microblaze_0_axi_periph",
+          "PROJECT-B:COMP:reset_n",
+          "PROJECT-B:COMP:rst_clk_wiz_0_100M",
+          "PROJECT-B:COMP:switches_8bits",
+          "PROJECT-B:COMP:sys_clock",
+          "PROJECT-B:COMP:sys_reset"
+        ],
+        "coverage_quality": "full",
+        "covered": true
+      },
+      "DMA-REQ-L1-006": {
+        "mapped_component_count": 45,
+        "mapped_components": [
+          "PROJECT-A:COMP:GPIO_IN",
+          "PROJECT-A:COMP:GPIO_OUT",
+          "PROJECT-A:COMP:axi_dma_0",
+          "PROJECT-A:COMP:axi_interconnect_0",
+          "PROJECT-A:COMP:axi_uartlite_0",
+          "PROJECT-A:COMP:axis2fifo",
+          "PROJECT-A:COMP:axis2fifo_0",
+          "PROJECT-A:COMP:buf2u16",
+          "PROJECT-A:COMP:buf2u32",
+          "PROJECT-A:COMP:clk_wiz_0",
+          "PROJECT-A:COMP:dlmb_bram_if_cntlr",
+          "PROJECT-A:COMP:dlmb_v10",
+          "PROJECT-A:COMP:dma_forward",
+          "PROJECT-A:COMP:dma_receive",
+          "PROJECT-A:COMP:dma_reset",
+          "PROJECT-A:COMP:dma_send",
+          "PROJECT-A:COMP:dma_sw_tone_gen",
+          "PROJECT-A:COMP:fifo2audpwm",
+          "PROJECT-A:COMP:fifo2audpwm_0",
+          "PROJECT-A:COMP:fifo_generator_0"
+        ],
+        "coverage_quality": "full",
+        "covered": true
+      }
+    }
+  }
+}

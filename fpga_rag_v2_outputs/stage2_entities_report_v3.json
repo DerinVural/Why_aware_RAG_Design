@@ -1,0 +1,26 @@
+{
+  "stage": 2,
+  "generated_at": "2026-02-23T09:13:25Z",
+  "projects": {
+    "PROJECT-A": {
+      "component_count": 44,
+      "constraint_count": 4,
+      "evidence_count": 24,
+      "issue_count": 5,
+      "pattern_count": 3,
+      "edge_count": 99
+    },
+    "PROJECT-B": {
+      "component_count": 35,
+      "constraint_count": 24,
+      "evidence_count": 55,
+      "issue_count": 4,
+      "pattern_count": 3,
+      "edge_count": 106
+    }
+  },
+  "notes": [
+    "Extraction only answers 'what exists' per architecture v3.",
+    "Inference-heavy items are marked PARSE_UNCERTAIN and confidence MEDIUM."
+  ]
+}
