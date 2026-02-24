@@ -126,6 +126,10 @@ class SQLiteQueryEngine:
             "SELECT id, node_type, project_id, name, confidence, attributes_json FROM nodes"
         ).fetchall()
         for r in rows:
+            try:
+                attrs = json.loads(r["attributes_json"]) if r["attributes_json"] else {}
+            except Exception:
+                attrs = {}
             item = {
                 "id": r["id"],
                 "node_type": r["node_type"],
@@ -133,9 +137,10 @@ class SQLiteQueryEngine:
                 "name": r["name"],
                 "confidence": r["confidence"],
                 "attributes_json": r["attributes_json"],
+                "attributes": attrs,
             }
             self.node_by_id[r["id"]] = item
-            self.node_tokens[r["id"]] = tokenize(f"{r['id']} {r['name']} {r['attributes_json']}")
+            self.node_tokens[r["id"]] = tokenize(f"{r['id']} {r['name']} {json.dumps(attrs, ensure_ascii=False)}")
         if self._table_exists("vector_documents"):
             self.vector_doc_table = "vector_documents"
         elif self._table_exists("vector_docs"):
@@ -146,7 +151,9 @@ class SQLiteQueryEngine:
         if self.vector_doc_table:
             vrows = cur.execute(f"SELECT node_id, text FROM {self.vector_doc_table}").fetchall()
         for r in vrows:
-            self.node_text_excerpt[r["node_id"]] = (r["text"] or "")[:220]
+            # Keep the first excerpt for a stable short citation view when node has multi-chunk vectors.
+            if r["node_id"] not in self.node_text_excerpt:
+                self.node_text_excerpt[r["node_id"]] = (r["text"] or "")[:220]
         erows = cur.execute(
             "SELECT id, edge_type, source, target, confidence FROM edges"
         ).fetchall()
@@ -201,7 +208,42 @@ class SQLiteQueryEngine:
             rows = []
         for idx, row in enumerate(rows):
             # bm25 lower is better; convert to positive descending score.
-            out[row["node_id"]] = max(0.01, 2.0 - (idx * 0.07))
+            score = max(0.01, 2.0 - (idx * 0.07))
+            prev = out.get(row["node_id"], 0.0)
+            # Multi-chunk vectors can produce repeated node_id rows; keep best score per node.
+            out[row["node_id"]] = score if score > prev else prev
+        return out
+
+    def _is_address_question(self, question: str) -> bool:
+        q = question.lower()
+        keys = {
+            "adres",
+            "address",
+            "awaddr",
+            "araddr",
+            "axi4-lite",
+            "axi4 lite",
+            "s_axi",
+            "base address",
+        }
+        return any(k in q for k in keys)
+
+    def _address_focus_nodes(self, scope: Optional[str]) -> Dict[str, List[Tuple[str, Dict[str, Any]]]]:
+        out: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {
+            "signals": [],
+            "segments": [],
+            "maps": [],
+        }
+        for nid, meta in self.node_by_id.items():
+            if scope and meta.get("project_id") != scope:
+                continue
+            attrs = meta.get("attributes", {}) or {}
+            if meta.get("node_type") == "EVIDENCE" and attrs.get("evidence_type") == "axi4lite_signal_binding":
+                out["signals"].append((nid, meta))
+            if attrs.get("constraint_type") == "axi_address_assignment" or attrs.get("evidence_type") == "tcl_address_assignment":
+                out["segments"].append((nid, meta))
+            if attrs.get("constraint_type") == "axi_address_map" or attrs.get("evidence_type") == "address_map_table":
+                out["maps"].append((nid, meta))
         return out
 
     def _rank_nodes(self, query: str, scope: Optional[str], limit: int = 12) -> List[Tuple[float, Dict[str, Any]]]:
@@ -454,6 +496,82 @@ class SQLiteQueryEngine:
             citations = {"nodes": [], "edges": []}
             warnings.append("NO_EVIDENCE_GATE_TRIGGERED")
             chain_conf = "MEDIUM"
+        elif self._is_address_question(question):
+            focus = self._address_focus_nodes(scope)
+            focus_node_ids: Set[str] = set()
+            aw_signals: Set[str] = set()
+            ar_signals: Set[str] = set()
+            segments: Set[str] = set()
+            bases: Set[str] = set()
+            q_lower = question.lower()
+            gpio_focus = "gpio" in q_lower
+
+            for nid, meta in focus["signals"]:
+                focus_node_ids.add(nid)
+                attrs = meta.get("attributes", {}) or {}
+                sig = str(attrs.get("signal", "")).lower()
+                if "awaddr" in sig:
+                    aw_signals.add("s_axi_awaddr")
+                if "araddr" in sig:
+                    ar_signals.add("s_axi_araddr")
+            for nid, meta in focus["segments"]:
+                attrs = meta.get("attributes", {}) or {}
+                spec = str(attrs.get("spec", ""))
+                seg = str(attrs.get("address_segment", ""))
+                if gpio_focus and "gpio" not in f"{spec} {seg}".lower():
+                    continue
+                focus_node_ids.add(nid)
+                m = re.search(r"addr_seg=([A-Za-z0-9_/\.\-]+)", spec)
+                if m:
+                    segments.add(m.group(1))
+                if seg:
+                    segments.add(seg)
+            for nid, meta in focus["maps"]:
+                attrs = meta.get("attributes", {}) or {}
+                base = str(attrs.get("base_address", "")).strip()
+                per = str(attrs.get("peripheral", ""))
+                spec = str(attrs.get("spec", ""))
+                if gpio_focus and "gpio" not in f"{per} {spec}".lower():
+                    continue
+                focus_node_ids.add(nid)
+                if base:
+                    bases.add(base)
+
+            node_ids.update(focus_node_ids)
+            extra_edges = self._collect_one_hop(
+                focus_node_ids,
+                {"VERIFIED_BY", "CONSTRAINED_BY", "DEPENDS_ON"},
+                scope=scope,
+                max_edges=32,
+            )
+            seen_edges = {e["id"] for e in used_edges}
+            for e in extra_edges:
+                if e["id"] not in seen_edges:
+                    used_edges.append(e)
+                    seen_edges.add(e["id"])
+                    node_ids.add(e["source"])
+                    node_ids.add(e["target"])
+            citations = self._format_citations(node_ids, used_edges)
+
+            sig_parts: List[str] = []
+            if aw_signals:
+                sig_parts.extend(sorted(aw_signals))
+            if ar_signals:
+                sig_parts.extend(sorted(ar_signals))
+            seg_part = ", ".join(sorted(segments)) if segments else "belirtilmemiş"
+            base_part = ", ".join(sorted(bases)) if bases else "dokümante edilmemiş"
+            if sig_parts:
+                answer = (
+                    f"AXI4-Lite adres sinyalleri: {', '.join(sig_parts)}. "
+                    f"Adres segmenti: {seg_part}. "
+                    f"Base address: {base_part}."
+                )
+            else:
+                answer = (
+                    f"AXI4-Lite arayüzünde doğrudan AWADDR/ARADDR sinyal kanıtı bulunamadı. "
+                    f"Adres segmenti: {seg_part}. "
+                    f"Base address: {base_part}."
+                )
         else:
             top_nodes = [f"{c['node_id']}({c['node_type']})" for c in citations["nodes"][:6]]
             top_edges = [f"{c['edge_type']}:{c['source']}->{c['target']}" for c in citations["edges"][:6]]
