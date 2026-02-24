@@ -208,8 +208,11 @@ def call_openai_responses(model: str, question: str, rag_result: Dict[str, Any],
     body = {
         "model": model,
         "input": [
-            {"role": "system", "content": [{"type": "text", "text": system}]},
-            {"role": "user", "content": [{"type": "text", "text": json.dumps(user_payload, ensure_ascii=False)}]},
+            {"role": "system", "content": [{"type": "input_text", "text": system}]},
+            {
+                "role": "user",
+                "content": [{"type": "input_text", "text": json.dumps(user_payload, ensure_ascii=False)}],
+            },
         ],
         "temperature": 0.2,
         "max_output_tokens": 600,
