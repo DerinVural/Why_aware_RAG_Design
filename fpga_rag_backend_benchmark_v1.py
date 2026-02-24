@@ -16,8 +16,8 @@ from fpga_rag_query_v3 import QueryEngine as JsonQueryEngine
 
 BASE_DIR = Path(__file__).resolve().parent
 OUT_DIR = BASE_DIR / "fpga_rag_v2_outputs"
-DEFAULT_GRAPH = OUT_DIR / "stage6_graph_vector_commit_v3.json"
-DEFAULT_DB = OUT_DIR / "fpga_rag_arch_v2.sqlite"
+DEFAULT_GRAPH = OUT_DIR / "stage6_graph_vector_commit_v4_chunked.json"
+DEFAULT_DB = OUT_DIR / "fpga_rag_arch_v2_chunked.sqlite"
 DEFAULT_OUT_JSON = OUT_DIR / "query_perf_benchmark_v2.json"
 DEFAULT_OUT_MD = OUT_DIR / "query_perf_benchmark_v2.md"
 

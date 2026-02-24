@@ -16,11 +16,11 @@ BASE_DIR = Path(__file__).resolve().parent
 OUT_DIR = BASE_DIR / "fpga_rag_v2_outputs"
 
 DEFAULT_SCHEMA = BASE_DIR / "fpga_rag_schema_arch_v2.sql"
-DEFAULT_DB = OUT_DIR / "fpga_rag_arch_v2.sqlite"
+DEFAULT_DB = OUT_DIR / "fpga_rag_arch_v2_chunked.sqlite"
 DEFAULT_STAGE1 = OUT_DIR / "stage1_manifest_v3.json"
 DEFAULT_STAGE4 = OUT_DIR / "stage4_matching_details_v3.json"
 DEFAULT_STAGE5 = OUT_DIR / "stage5_gap_analysis_v3.json"
-DEFAULT_STAGE6 = OUT_DIR / "stage6_graph_vector_commit_v3.json"
+DEFAULT_STAGE6 = OUT_DIR / "stage6_graph_vector_commit_v4_chunked.json"
 
 CONF = {"LOW", "MEDIUM", "HIGH"}
 

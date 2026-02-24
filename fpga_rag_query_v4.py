@@ -14,8 +14,8 @@ from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Set, Tuple
 
 BASE_DIR = Path(__file__).resolve().parent
 OUT_DIR = BASE_DIR / "fpga_rag_v2_outputs"
-DEFAULT_GRAPH = OUT_DIR / "stage6_graph_vector_commit_v3.json"
-DEFAULT_DB = OUT_DIR / "fpga_rag_arch_v2.sqlite"
+DEFAULT_GRAPH = OUT_DIR / "stage6_graph_vector_commit_v4_chunked.json"
+DEFAULT_DB = OUT_DIR / "fpga_rag_arch_v2_chunked.sqlite"
 
 CONF_RANK = {"LOW": 1, "MEDIUM": 2, "HIGH": 3}
 RANK_CONF = {1: "LOW", 2: "MEDIUM", 3: "HIGH"}
@@ -290,6 +290,57 @@ class SQLiteQueryEngine:
 
         ordered = [f"LED[{i}]={assignments[i]}" for i in sorted(assignments.keys())]
         return ordered, node_ids
+
+    def _axi_gpio_config_from_sources(self, scope: Optional[str]) -> Dict[str, Any]:
+        candidate_files: Set[str] = set()
+        for meta in self.node_by_id.values():
+            if scope and meta.get("project_id") != scope:
+                continue
+            attrs = meta.get("attributes", {}) or {}
+            src = attrs.get("source_file")
+            name = str(meta.get("name", "")).lower()
+            if isinstance(src, str) and src and ("axi" in src.lower() or "gpio" in src.lower() or "tcl" in src.lower()):
+                candidate_files.add(src)
+            if "axi_gpio" in name and isinstance(src, str) and src:
+                candidate_files.add(src)
+
+        best: Dict[str, Any] = {}
+        for f in sorted(candidate_files):
+            p = Path(f)
+            if not p.exists() or not p.is_file():
+                continue
+            if p.suffix.lower() != ".tcl":
+                continue
+            try:
+                text = p.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                continue
+
+            c_gpio = re.search(r"CONFIG\.C_GPIO_WIDTH\s*\{?(\d+)\}?", text)
+            c_gpio2 = re.search(r"CONFIG\.C_GPIO2_WIDTH\s*\{?(\d+)\}?", text)
+            c_dual = re.search(r"CONFIG\.C_IS_DUAL\s*\{?([01])\}?", text)
+            if not (c_gpio or c_gpio2 or c_dual):
+                continue
+
+            cfg = {
+                "file": f,
+                "gpio_width": int(c_gpio.group(1)) if c_gpio else None,
+                "gpio2_width": int(c_gpio2.group(1)) if c_gpio2 else None,
+                "is_dual": int(c_dual.group(1)) if c_dual else None,
+            }
+            score = 0
+            if cfg["is_dual"] is not None:
+                score += 3
+            if cfg["gpio_width"] is not None:
+                score += 2
+            if cfg["gpio2_width"] is not None:
+                score += 1
+            if "create_axi_with_xdc" in f:
+                score += 2
+            cfg["score"] = score
+            if not best or score > best.get("score", -1):
+                best = cfg
+        return best
 
     def _address_focus_nodes(self, scope: Optional[str]) -> Dict[str, List[Tuple[str, Dict[str, Any]]]]:
         out: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {
@@ -579,6 +630,7 @@ class SQLiteQueryEngine:
         elif self._is_led_pin_question(question):
             ordered, pin_node_ids = self._led_pin_assignments(scope)
             node_ids.update(pin_node_ids)
+            cfg = self._axi_gpio_config_from_sources(scope)
             extra_edges = self._collect_one_hop(
                 pin_node_ids,
                 {"CONSTRAINED_BY", "VERIFIED_BY"},
@@ -594,8 +646,38 @@ class SQLiteQueryEngine:
                     node_ids.add(e["source"])
                     node_ids.add(e["target"])
             citations = self._format_citations(node_ids, used_edges)
+            channels_txt = "belirtilmemiş"
+            width_txt = "belirtilmemiş"
+            if cfg:
+                is_dual = cfg.get("is_dual")
+                w1 = cfg.get("gpio_width")
+                w2 = cfg.get("gpio2_width")
+                if is_dual == 1:
+                    channels_txt = "2 kanal"
+                    if w1 is not None and w2 is not None:
+                        width_txt = f"kanal1={w1} bit, kanal2={w2} bit"
+                    elif w1 is not None:
+                        width_txt = f"{w1} bit"
+                elif is_dual == 0:
+                    channels_txt = "1 kanal"
+                    if w1 is not None:
+                        width_txt = f"{w1} bit"
+                else:
+                    if w2 is not None:
+                        channels_txt = "2 kanal"
+                    elif w1 is not None:
+                        channels_txt = "1 kanal"
+                    if w1 is not None and w2 is not None:
+                        width_txt = f"kanal1={w1} bit, kanal2={w2} bit"
+                    elif w1 is not None:
+                        width_txt = f"{w1} bit"
             if ordered:
-                answer = "LED pin atamaları: " + ", ".join(ordered) + "."
+                answer = (
+                    f"AXI GPIO konfigürasyonu: {channels_txt}, GPIO genişliği: {width_txt}. "
+                    "LED pin atamaları: "
+                    + ", ".join(ordered)
+                    + "."
+                )
             else:
                 answer = "LED pin ataması için doğrudan kanıt bulunamadı."
         elif self._is_address_question(question):

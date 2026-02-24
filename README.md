@@ -10,7 +10,7 @@ FPGA RAG v2 mimarisine göre hazırlanmış sorgu, loader ve normalize SQLite ş
 - `fpga_rag_schema_arch_v2.sql`: mimari-v2 uyumlu DB şeması
 - `fpga_rag_backend_benchmark_v1.py`: JSON vs SQLite performans benchmark
 - `fpga_rag_db_mapping_arch_v2.md`: aşama-tablo eşleme notu
-- `fpga_rag_v2_outputs/`: stage çıktıları + `fpga_rag_arch_v2.sqlite`
+- `fpga_rag_v2_outputs/`: stage çıktıları + `fpga_rag_arch_v2_chunked.sqlite`
 
 ## Kurulum
 

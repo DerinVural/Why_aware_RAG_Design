@@ -129,11 +129,16 @@ HTML = """<!doctype html>
         <button id="ask" class="btn">Sor</button>
         <button id="sample1" class="btn secondary">Örnek: WHY</button>
         <button id="sample2" class="btn secondary">Örnek: TRACE</button>
+        <button id="sample3" class="btn secondary">Örnek: LED Pinleri</button>
       </div>
       <p class="hint">Not: OPENAI_API_KEY yoksa sadece RAG sonucu döner, LLM alanında uyarı görünür.</p>
     </div>
 
     <div class="grid">
+      <div class="panel">
+        <h3>RAG Kısa Cevap</h3>
+        <pre id="rag_answer">Henüz sorgu yok.</pre>
+      </div>
       <div class="panel">
         <h3>ChatGPT Yanıtı</h3>
         <pre id="llm">Henüz sorgu yok.</pre>
@@ -148,6 +153,7 @@ HTML = """<!doctype html>
   <script>
     const queryEl = document.getElementById("query");
     const ragEl = document.getElementById("rag");
+    const ragAnswerEl = document.getElementById("rag_answer");
     const llmEl = document.getElementById("llm");
     const askBtn = document.getElementById("ask");
 
@@ -157,6 +163,9 @@ HTML = """<!doctype html>
     document.getElementById("sample2").addEventListener("click", () => {
       queryEl.value = "DMA-REQ-L0-001'in alt gereksinimleri neler?";
     });
+    document.getElementById("sample3").addEventListener("click", () => {
+      queryEl.value = "Proje B'de AXI GPIO IP'si kaç kanallı konfigüre edilmiş, GPIO genişliği nedir ve LED çıkışları hangi FPGA pinlerine atanmıştır?";
+    });
 
     async function ask() {
       const q = queryEl.value.trim();
@@ -164,6 +173,7 @@ HTML = """<!doctype html>
       askBtn.disabled = true;
       askBtn.textContent = "Sorgulanıyor...";
       ragEl.textContent = "Yükleniyor...";
+      ragAnswerEl.textContent = "Yükleniyor...";
       llmEl.textContent = "Yükleniyor...";
       try {
         const resp = await fetch("/api/ask", {
@@ -178,9 +188,11 @@ HTML = """<!doctype html>
         });
         const data = await resp.json();
         ragEl.textContent = JSON.stringify(data.rag_result, null, 2);
+        ragAnswerEl.textContent = (data.rag_result && data.rag_result.answer) ? data.rag_result.answer : "(RAG answer yok)";
         llmEl.textContent = data.llm_answer || data.llm_error || "(LLM kapalı)";
       } catch (e) {
         ragEl.textContent = "İstek hatası: " + e;
+        ragAnswerEl.textContent = "İstek hatası";
         llmEl.textContent = "İstek hatası";
       } finally {
         askBtn.disabled = false;
@@ -198,7 +210,8 @@ HTML = """<!doctype html>
 def call_openai_responses(model: str, question: str, rag_result: Dict[str, Any], api_key: str, timeout: int = 40) -> str:
     system = (
         "Sen FPGA RAG yardımcı asistanısın. Sadece verilen RAG kanıtlarına dayan. "
-        "Kanıt olmayan bilgi uydurma. Yanıtı Türkçe ve net ver."
+        "Kanıt olmayan bilgi uydurma. Eğer rag_result.answer içinde açık değerler varsa (pin, adres, sayı), "
+        "bunları aynen koru ve çelişme üretme. Yanıtı Türkçe ve net ver."
     )
     user_payload = {
         "question": question,
