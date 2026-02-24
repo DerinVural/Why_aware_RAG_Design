@@ -255,6 +255,42 @@ class SQLiteQueryEngine:
         }
         return any(k in q for k in keys)
 
+    def _is_led_pin_question(self, question: str) -> bool:
+        q = question.lower()
+        has_led = any(k in q for k in {"led", "leds", "led_8bits", "leds_8bits"})
+        has_pin = any(k in q for k in {"pin", "package_pin", "atan", "atandı", "atama", "assignment"})
+        return has_led and has_pin
+
+    def _led_pin_assignments(self, scope: Optional[str]) -> Tuple[List[str], Set[str]]:
+        assignments: Dict[int, str] = {}
+        node_ids: Set[str] = set()
+        for nid, meta in self.node_by_id.items():
+            if scope and meta.get("project_id") != scope:
+                continue
+            if meta.get("node_type") != "CONSTRAINT":
+                continue
+            attrs = meta.get("attributes", {}) or {}
+            ctype = str(attrs.get("constraint_type", "")).lower()
+            if ctype not in {"pin", "pin_assignment"}:
+                continue
+            spec = str(attrs.get("spec", ""))
+            if "PACKAGE_PIN" not in spec or "led" not in spec.lower():
+                continue
+            pin_m = re.search(r"PACKAGE_PIN\s+([A-Za-z0-9_]+)", spec)
+            port_m = re.search(r"\[get_ports\s+\{?([A-Za-z0-9_]+)\[(\d+)\]\}?\]", spec)
+            if not pin_m or not port_m:
+                continue
+            port_name = port_m.group(1).lower()
+            if "led" not in port_name:
+                continue
+            idx = int(port_m.group(2))
+            pin = pin_m.group(1)
+            assignments[idx] = pin
+            node_ids.add(nid)
+
+        ordered = [f"LED[{i}]={assignments[i]}" for i in sorted(assignments.keys())]
+        return ordered, node_ids
+
     def _address_focus_nodes(self, scope: Optional[str]) -> Dict[str, List[Tuple[str, Dict[str, Any]]]]:
         out: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {
             "signals": [],
@@ -540,6 +576,28 @@ class SQLiteQueryEngine:
             citations = {"nodes": [], "edges": []}
             warnings.append("NO_EVIDENCE_GATE_TRIGGERED")
             chain_conf = "MEDIUM"
+        elif self._is_led_pin_question(question):
+            ordered, pin_node_ids = self._led_pin_assignments(scope)
+            node_ids.update(pin_node_ids)
+            extra_edges = self._collect_one_hop(
+                pin_node_ids,
+                {"CONSTRAINED_BY", "VERIFIED_BY"},
+                scope=scope,
+                strict_scope=bool(scope),
+                max_edges=32,
+            )
+            seen_edges = {e["id"] for e in used_edges}
+            for e in extra_edges:
+                if e["id"] not in seen_edges:
+                    used_edges.append(e)
+                    seen_edges.add(e["id"])
+                    node_ids.add(e["source"])
+                    node_ids.add(e["target"])
+            citations = self._format_citations(node_ids, used_edges)
+            if ordered:
+                answer = "LED pin atamaları: " + ", ".join(ordered) + "."
+            else:
+                answer = "LED pin ataması için doğrudan kanıt bulunamadı."
         elif self._is_address_question(question):
             focus = self._address_focus_nodes(scope)
             focus_node_ids: Set[str] = set()
