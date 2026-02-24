@@ -80,8 +80,33 @@ def route_query(query: str) -> str:
 
 def detect_scope(query: str, qtype: str) -> Optional[str]:
     q = query.lower()
-    has_dma = any(k in q for k in ["project-a", "project a", "dma", "nexys-a7", "nexys a7"])
-    has_axi = any(k in q for k in ["project-b", "project b", "axi_example", "axi example"])
+    has_dma = any(
+        k in q
+        for k in [
+            "project-a",
+            "project a",
+            "proje-a",
+            "proje a",
+            "dma",
+            "nexys-a7",
+            "nexys a7",
+        ]
+    )
+    has_axi = any(
+        k in q
+        for k in [
+            "project-b",
+            "project b",
+            "proje-b",
+            "proje b",
+            "axi_example",
+            "axi example",
+        ]
+    )
+    if re.search(r"\bproje\s*[- ]?a\b", q, re.IGNORECASE):
+        has_dma = True
+    if re.search(r"\bproje\s*[- ]?b\b", q, re.IGNORECASE):
+        has_axi = True
     if re.search(r"\bDMA-REQ-L\d-\d{3}\b", query, re.IGNORECASE) or re.search(r"\bDMA-DEC-\d{3}\b", query, re.IGNORECASE):
         has_dma = True
     if re.search(r"\bAXI-REQ-L\d-\d{3}\b", query, re.IGNORECASE) or re.search(r"\bAXI-DEC-\d{3}\b", query, re.IGNORECASE):
@@ -176,11 +201,13 @@ class SQLiteQueryEngine:
             ids.append(f"STAGE3:{x.upper()}")
         return ids
 
-    def _filter_edge_scope(self, edge: Dict[str, Any], scope: Optional[str]) -> bool:
+    def _filter_edge_scope(self, edge: Dict[str, Any], scope: Optional[str], strict: bool = False) -> bool:
         if not scope:
             return True
         s = self.node_by_id.get(edge["source"], {})
         t = self.node_by_id.get(edge["target"], {})
+        if strict:
+            return s.get("project_id") == scope and t.get("project_id") == scope
         return s.get("project_id") == scope or t.get("project_id") == scope
 
     def _semantic_rank(self, query: str, scope: Optional[str], limit: int = 24) -> Dict[str, float]:
@@ -267,6 +294,7 @@ class SQLiteQueryEngine:
         anchor_ids: Set[str],
         edge_types: Optional[Set[str]],
         scope: Optional[str],
+        strict_scope: bool = False,
         max_edges: int = 64,
     ) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
@@ -275,7 +303,7 @@ class SQLiteQueryEngine:
             for e in self.out_adj.get(nid, []) + self.in_adj.get(nid, []):
                 if edge_types and e["edge_type"] not in edge_types:
                     continue
-                if not self._filter_edge_scope(e, scope):
+                if not self._filter_edge_scope(e, scope, strict=strict_scope):
                     continue
                 if e["id"] in seen:
                     continue
@@ -426,6 +454,7 @@ class SQLiteQueryEngine:
                 anchor_ids,
                 {"ANALOGOUS_TO", "REUSES_PATTERN", "CONTRADICTS", "INFORMED_BY"},
                 scope=None,
+                strict_scope=False,
                 max_edges=64,
             )
             if len(used_edges) < 3:
@@ -443,11 +472,26 @@ class SQLiteQueryEngine:
                     if len(used_edges) >= 64:
                         break
         else:
-            used_edges = self._collect_one_hop(anchor_ids, None, scope=scope, max_edges=48)
+            used_edges = self._collect_one_hop(
+                anchor_ids,
+                None,
+                scope=scope,
+                strict_scope=bool(scope),
+                max_edges=48,
+            )
 
         for e in used_edges:
             node_ids.add(e["source"])
             node_ids.add(e["target"])
+
+        if qtype == "WHAT" and scope:
+            node_ids = {nid for nid in node_ids if self.node_by_id.get(nid, {}).get("project_id") == scope}
+            used_edges = [
+                e
+                for e in used_edges
+                if self.node_by_id.get(e["source"], {}).get("project_id") == scope
+                and self.node_by_id.get(e["target"], {}).get("project_id") == scope
+            ]
 
         existence_query = ("var mı" in question.lower()) or ("var mi" in question.lower())
         focus_tokens = existence_focus_tokens(question) if existence_query else set()
@@ -542,6 +586,7 @@ class SQLiteQueryEngine:
                 focus_node_ids,
                 {"VERIFIED_BY", "CONSTRAINED_BY", "DEPENDS_ON"},
                 scope=scope,
+                strict_scope=bool(scope),
                 max_edges=32,
             )
             seen_edges = {e["id"] for e in used_edges}
